@@ -33,11 +33,21 @@ contract('ContestETHOnly', (accounts) => {
     
     // setup useful values
     const oneEther = 1000000000000000000; // 1eth
-    const stageID = 0;
-    const contestID = 0;
-  
+    
+    const contestID = 1;
+    var ContestETHOnlyInstance;
+    var ContestETHOnlyMockInstance;
+    
+    it('constructor', async () => {
+        ContestETHOnlyInstance = await ContestETHOnly.new();
+        ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        assert.isTrue(true);
+        
+    });
+    
     it('should disable recieve() method', async () => {
-        const ContestETHOnlyInstance = await ContestETHOnly.new(
+        let stageID = 0;
+        await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInBlocksCount,
@@ -46,6 +56,17 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
+                                                                
+        var contestID; 
+        await ContestETHOnlyInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
+        
         const amountETHSendToContract = 1*10**18; // 1ETH
         // send ETH to Contract
         await truffleAssert.reverts(
@@ -61,7 +82,8 @@ contract('ContestETHOnly', (accounts) => {
     });
     
     it('should enter in active stage', async () => {
-        const ContestETHOnlyInstance = await ContestETHOnly.new(
+        let stageID = 0;
+        await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInBlocksCount,
@@ -70,6 +92,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
+        var contestID; 
+        await ContestETHOnlyInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
+        
         await ContestETHOnlyInstance.enter(stageID, contestID, { from: accountOne });
         
         // revert if trying to double enter
@@ -81,7 +113,8 @@ contract('ContestETHOnly', (accounts) => {
     });
     
     it('should leave in active stage if entered before', async () => {
-        const ContestETHOnlyInstance = await ContestETHOnly.new(
+        let stageID = 0;
+        await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInBlocksCount,
@@ -90,11 +123,21 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
+        var contestID; 
+        await ContestETHOnlyInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
+
         await ContestETHOnlyInstance.enter(stageID, contestID, { from: accountOne });
         
         await ContestETHOnlyInstance.leave(stageID, contestID, { from: accountOne });
         
-        // revert if trying to double enter
+        // revert if trying to double leave
         await truffleAssert.reverts(
             ContestETHOnlyInstance.leave(stageID, contestID, { from: accountOne }),
             "Sender must be in contestant list"
@@ -103,7 +146,8 @@ contract('ContestETHOnly', (accounts) => {
     });
     
     it('should prevent pledge if entered before', async () => {
-        const ContestETHOnlyInstance = await ContestETHOnly.new(
+        let stageID = 0;
+        await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInBlocksCount,
@@ -112,6 +156,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
+        var contestID; 
+        await ContestETHOnlyInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
+        
                                                                 
         await ContestETHOnlyInstance.enter(stageID, contestID, { from: accountOne });
         
@@ -124,7 +178,8 @@ contract('ContestETHOnly', (accounts) => {
     });
     
     it('should pledge before and during contestPeriod', async () => {
-        const ContestETHOnlyInstance = await ContestETHOnly.new(
+        let stageID = 0;
+        await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInBlocksCount,
@@ -133,6 +188,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
+        var contestID; 
+        await ContestETHOnlyInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
+        
         
         await ContestETHOnlyInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, contestID, { from: accountOne, value:'0x'+(oneEther).toString(16) });
         
@@ -144,7 +209,8 @@ contract('ContestETHOnly', (accounts) => {
     });
     
     it('should prevent pledge in voting or revoking periods', async () => {
-        const ContestETHOnlyInstance = await ContestETHOnly.new(
+        let stageID = 0;
+        await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInBlocksCount,
@@ -153,6 +219,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
+        var contestID; 
+        await ContestETHOnlyInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
+        
         // make some pledge to reach minimum                                                                
         await ContestETHOnlyInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, contestID, { from: accountOne, value:'0x'+(oneEther).toString(16) });
         await ContestETHOnlyInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, contestID, { from: accountOne, value:'0x'+(oneEther).toString(16) });
@@ -183,7 +259,8 @@ contract('ContestETHOnly', (accounts) => {
     });
     
     it('should prevent double vote ', async () => {
-        const ContestETHOnlyInstance = await ContestETHOnly.new(
+        let stageID = 0;
+        await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInBlocksCount,
@@ -192,6 +269,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
+        var contestID; 
+        await ContestETHOnlyInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
+        
         // make some pledge to reach minimum
         await ContestETHOnlyInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, contestID, { from: accountOne, value:'0x'+(3*oneEther).toString(16) });
         
@@ -209,7 +296,8 @@ contract('ContestETHOnly', (accounts) => {
     });
     
     it('should prevent vote outside of voting period', async () => {
-        const ContestETHOnlyInstance = await ContestETHOnly.new(
+        let stageID = 0;
+        await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInBlocksCount,
@@ -218,7 +306,15 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
-        
+        var contestID; 
+        await ContestETHOnlyInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
         
         // make some pledge to reach minimum
         await ContestETHOnlyInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, contestID, { from: accountOne, value:'0x'+(3*oneEther).toString(16) });
@@ -257,7 +353,8 @@ contract('ContestETHOnly', (accounts) => {
     });
     
     it('should delegate to some1', async () => {
-        const ContestETHOnlyInstance = await ContestETHOnly.new(
+        let stageID = 0;
+        await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInBlocksCount,
@@ -266,6 +363,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
+        var contestID; 
+        await ContestETHOnlyInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
+        
         
         
         // make some pledge to reach minimum
@@ -285,10 +392,8 @@ contract('ContestETHOnly', (accounts) => {
     });    
 
     it('should revoke on revoking period', async () => {
-        
-        
-       
-        const ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        let stageID = 0;
+        await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInBlocksCount,
@@ -297,6 +402,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
+        var contestID; 
+        await ContestETHOnlyMockInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
+        
 
         const revokeFee = (await ContestETHOnlyMockInstance.getRevokeFee({from: accountOne}));
         const accountFourthStartingBalance = (await web3.eth.getBalance(accountFourth));
@@ -351,8 +466,8 @@ contract('ContestETHOnly', (accounts) => {
     });  
   
     it('Stage Workflow: should get correct prizes for winners&losers', async () => {
-        
-        const ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        let stageID = 0;
+        await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInBlocksCount,
@@ -361,8 +476,15 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
-        
-        
+        var contestID; 
+        await ContestETHOnlyMockInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
                                                                 
         await truffleAssert.reverts(
             ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne}),
@@ -489,8 +611,8 @@ contract('ContestETHOnly', (accounts) => {
     });
     
     it('Stage Workflow: winners\'s same weights(order by entering)', async () => {
-        
-        const ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        let stageID = 0;
+        await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInBlocksCount,
@@ -500,8 +622,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [] // judges
                                                                 );
         
+        var contestID; 
+        await ContestETHOnlyMockInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
         
-                                                                
         await truffleAssert.reverts(
             ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne}),
             "Last stage have not ended yet"
@@ -627,8 +757,8 @@ contract('ContestETHOnly', (accounts) => {
     });
   
     it('Stage Workflow: the one winner with 3 contest\'s prizes', async () => {
-        
-        const ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        let stageID = 0;
+        await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInBlocksCount,
@@ -638,8 +768,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [] // judges
                                                                 );
         
+        var contestID; 
+        await ContestETHOnlyMockInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
         
-                                                                
         await truffleAssert.reverts(
             ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne}),
             "Last stage have not ended yet"
@@ -750,7 +888,8 @@ contract('ContestETHOnly', (accounts) => {
     });
     
     it('Stage Workflow: there are no winners', async () => {
-        const ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        let stageID = 0;
+        await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInBlocksCount,
@@ -760,8 +899,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [] // judges
                                                                 );
         
+        var contestID; 
+        await ContestETHOnlyMockInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
         
-                                                                
         await truffleAssert.reverts(
             ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne}),
             "Last stage have not ended yet"
@@ -867,7 +1014,8 @@ contract('ContestETHOnly', (accounts) => {
     });
     
     it('Stage Workflow: there are no entered', async () => {
-        const ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        let stageID = 0;
+        await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInBlocksCount,
@@ -877,8 +1025,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [] // judges
                                                                 );
         
+        var contestID; 
+        await ContestETHOnlyMockInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
         
-                                                                
         await truffleAssert.reverts(
             ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne}),
             "Last stage have not ended yet"
@@ -923,7 +1079,8 @@ contract('ContestETHOnly', (accounts) => {
     });
 
     it('Stage Workflow: test with delegation', async () => {
-        const ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        let stageID = 0;
+        await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInBlocksCount,
@@ -933,8 +1090,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [] // judges
                                                                 );
         
+        var contestID; 
+        await ContestETHOnlyMockInstance.getPastEvents('ContestStart', {
+            filter: {addr: accountOne}, // Using an array in param means OR: e.g. 20 or 23
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function(error, events){  })
+        .then(function(events){
+            contestID = events.pop().returnValues['contestID'];
+        });
         
-                                                                
         await truffleAssert.reverts(
             ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne}),
             "Last stage have not ended yet"
@@ -1060,4 +1225,5 @@ contract('ContestETHOnly', (accounts) => {
             "Wrong reward for loser"
         );
     });
+    
 });

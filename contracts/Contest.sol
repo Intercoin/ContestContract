@@ -6,20 +6,7 @@ import "./openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 contract Contest is ContestBase {
     address token;
     
-    constructor (
-        address token_address,
-        uint256[] memory stagesMinAmount,
-        uint256 stagesCount,
-        uint256 contestPeriodInBlocksCount,
-        uint256 votePeriodInBlocksCount,
-        uint256 revokePeriodInBlocksCount,
-        uint256[] memory percentForWinners,
-        address[] memory judges
-    ) 
-        ContestBase(stagesCount, stagesMinAmount, contestPeriodInBlocksCount, votePeriodInBlocksCount, revokePeriodInBlocksCount, percentForWinners, judges)
-        //payable
-        public 
-    {
+    constructor (address token_address) public {
         token = token_address;
     }
     

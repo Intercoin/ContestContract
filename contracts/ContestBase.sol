@@ -10,8 +10,9 @@ contract ContestBase is Ownable {
     using EnumerableSet for EnumerableSet.UintSet;
     using SafeMath for uint256;
 
+    // ** deprecated 
     // delegateFee (some constant in contract) which is percent of amount. They can delegate their entire amount of vote to the judge, or some.
-    uint256 delegateFee = 5e4; // 5% mul at 1e6
+    // uint256 delegateFee = 5e4; // 5% mul at 1e6
     
     // penalty for revoke tokens
     uint256 revokeFee = 10e4; // 10% mul at 1e6
@@ -37,8 +38,7 @@ contract ContestBase is Ownable {
 
         mapping (uint256 => address[]) winners;
         bool winnersLock;
-        
-        
+
         uint256 amount;     // acummulated all pledged 
         uint256 minAmount;
         
@@ -52,7 +52,6 @@ contract ContestBase is Ownable {
         EnumerableSet.AddressSet contestsList;
         EnumerableSet.AddressSet pledgesList;
         EnumerableSet.AddressSet judgesList;
-        
         EnumerableSet.UintSet percentForWinners;
         mapping (address => Participant) participants;
     }
@@ -68,7 +67,6 @@ contract ContestBase is Ownable {
         address voteTo; // person voted to
         bool delegated;  // if true, that person delegated to some1
         address delegateTo; // person delegated to
-        
         EnumerableSet.AddressSet delegatedBy; // participant who delegated own weight
         EnumerableSet.AddressSet votedBy; // participant who delegated own weight
         bool won;  // if true, that person won round. setup after EndOfStage
@@ -78,67 +76,14 @@ contract ContestBase is Ownable {
         bool active; // always true
 
     }
-    
-      
-      
+
 	event ContestStart(uint256 indexed contestID);
     event ContestComplete(uint256 indexed contestID);
     event ContestWinnerAnnounced(uint256 indexed contestID, address[] indexed winners);
-    event StageStartAnnounced(uint256 indexed contestID, uint256 indexed stageID);
-    event StageCompleted(uint256 indexed contestID, uint256 indexed stageID);
-	/**
-	 * 
-     * param stageDurationInBlocksCount durations block number 
-     * for example 40 mean that stage ends after current_block_number+40
-     * param judges Addresses of judges. if empty than everyone can vote 
-     * 
-     */
-     /**
-     * @param stagesCount count of stages for first Contest
-     * @param stagesMinAmount array of minimum amount that need to reach at each stage
-     * @param contestPeriodInBlocksCount duration in blocks  for contest period(exclude before reach minimum amount)
-     * @param votePeriodInBlocksCount duration in blocks  for voting period
-     * @param revokePeriodInBlocksCount duration in blocks  for revoking period
-     * @param percentForWinners array of values in percentages of overall amount that will gain winners 
-     * @param judges array of judges' addresses
-     * 
-     */
-    constructor (
-        uint256 stagesCount,
-        uint256[] memory stagesMinAmount,
-        uint256 contestPeriodInBlocksCount,
-        uint256 votePeriodInBlocksCount,
-        uint256 revokePeriodInBlocksCount,
-        uint256[] memory percentForWinners,
-        address[] memory judges
-    ) 
-        public 
-    {
-        currentContestNumber = 0;
-        uint256 stage = 0;
-        
-        _contests[currentContestNumber].stage = 0;            
-        for (stage = 0; stage < stagesCount; stage++) {
-            _contests[currentContestNumber]._stages[stage].minAmount = stagesMinAmount[stage];
-            _contests[currentContestNumber]._stages[stage].winnersLock = false;
-            _contests[currentContestNumber]._stages[stage].active = false;
-            _contests[currentContestNumber]._stages[stage].contestPeriod = contestPeriodInBlocksCount;
-            _contests[currentContestNumber]._stages[stage].votePeriod = votePeriodInBlocksCount;
-            _contests[currentContestNumber]._stages[stage].revokePeriod = revokePeriodInBlocksCount;
-            
-            for (uint256 i = 0; i < judges.length; i++) {
-                _contests[currentContestNumber]._stages[stage].judgesList.add(judges[i]);
-            }
-            
-            for (uint256 i = 0; i < percentForWinners.length; i++) {
-                _contests[currentContestNumber]._stages[stage].percentForWinners.add(percentForWinners[i]);
-            }
-        }
-        
-        emit ContestStart(currentContestNumber);
-        
-    }
-
+    event StageStartAnnounced(uint256 indexed stageID, uint256 indexed contestID);
+    event StageCompleted(uint256 indexed stageID, uint256 indexed contestID);
+    
+    
 	////
 	// modifiers section
 	////
@@ -306,6 +251,58 @@ contract ContestBase is Ownable {
     ////
 	// END of modifiers section 
 	////
+
+    constructor () public {
+        currentContestNumber = 0;
+        
+    }
+	/**
+     * @param stagesCount count of stages for first Contest
+     * @param stagesMinAmount array of minimum amount that need to reach at each stage
+     * @param contestPeriodInBlocksCount duration in blocks  for contest period(exclude before reach minimum amount)
+     * @param votePeriodInBlocksCount duration in blocks  for voting period
+     * @param revokePeriodInBlocksCount duration in blocks  for revoking period
+     * @param percentForWinners array of values in percentages of overall amount that will gain winners 
+     * @param judges array of judges' addresses. if empty than everyone can vote
+     * 
+     */
+    function createContest (
+        uint256 stagesCount,
+        uint256[] memory stagesMinAmount,
+        uint256 contestPeriodInBlocksCount,
+        uint256 votePeriodInBlocksCount,
+        uint256 revokePeriodInBlocksCount,
+        uint256[] memory percentForWinners,
+        address[] memory judges
+    ) 
+        public 
+    {
+        
+        currentContestNumber = currentContestNumber.add(1);
+        
+        uint256 stage = 0;
+        
+        _contests[currentContestNumber].stage = 0;            
+        for (stage = 0; stage < stagesCount; stage++) {
+            _contests[currentContestNumber]._stages[stage].minAmount = stagesMinAmount[stage];
+            _contests[currentContestNumber]._stages[stage].winnersLock = false;
+            _contests[currentContestNumber]._stages[stage].active = false;
+            _contests[currentContestNumber]._stages[stage].contestPeriod = contestPeriodInBlocksCount;
+            _contests[currentContestNumber]._stages[stage].votePeriod = votePeriodInBlocksCount;
+            _contests[currentContestNumber]._stages[stage].revokePeriod = revokePeriodInBlocksCount;
+            
+            for (uint256 i = 0; i < judges.length; i++) {
+                _contests[currentContestNumber]._stages[stage].judgesList.add(judges[i]);
+            }
+            
+            for (uint256 i = 0; i < percentForWinners.length; i++) {
+                _contests[currentContestNumber]._stages[stage].percentForWinners.add(percentForWinners[i]);
+            }
+        }
+        
+        emit ContestStart(currentContestNumber);
+        
+    }
 
     ////
 	// public section
@@ -594,6 +591,8 @@ contract ContestBase is Ownable {
 	    // switch to next stage
 	    if (_contests[contestID].stagesCount == stageID.add(1)) {
             // just complete if last stage 
+            
+            emit ContestComplete(contestID);
         } else {
             // increment stage
             _contests[contestID].stage = (_contests[contestID].stage).add(1);
@@ -839,7 +838,7 @@ contract ContestBase is Ownable {
 	    }
 	}
     
-    // useful methdo to sort native memory array 
+    // useful method to sort native memory array 
     function sortAsc(uint256[] memory data) private returns(uint[] memory) {
        quickSortAsc(data, int(0), int(data.length - 1));
        return data;

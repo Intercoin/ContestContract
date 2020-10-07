@@ -4,23 +4,6 @@ import "./ContestBase.sol";
 
 contract ContestETHOnly is ContestBase {
     
-    constructor (
-        uint256 stagesCount,
-        uint256[] memory stagesMinAmount,
-        uint256 contestPeriodInBlocksCount,
-        uint256 votePeriodInBlocksCount,
-        uint256 revokePeriodInBlocksCount,
-        uint256[] memory percentForWinners,
-        address[] memory judges
-    ) 
-        ContestBase(stagesCount, stagesMinAmount, contestPeriodInBlocksCount, votePeriodInBlocksCount, revokePeriodInBlocksCount, percentForWinners, judges)
-        //payable
-        public 
-    {
-        
-    }
-    
-    
     /**
      * Recieved ether and transfer token to sender
      */

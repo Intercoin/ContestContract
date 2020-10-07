@@ -4,22 +4,6 @@ import "../ContestETHOnly.sol";
 
 contract ContestETHOnlyMock is ContestETHOnly {
    
-    constructor (
-        uint256 stagesCount,
-        uint256[] memory stagesMinAmount,
-        uint256 contestPeriodInBlocksCount,
-        uint256 votePeriodInBlocksCount,
-        uint256 revokePeriodInBlocksCount,
-        uint256[] memory percentForWinners,
-        address[] memory judges
-    ) 
-        ContestETHOnly(stagesCount, stagesMinAmount, contestPeriodInBlocksCount, votePeriodInBlocksCount, revokePeriodInBlocksCount, percentForWinners, judges)
-        //payable
-        public 
-    {
-        
-    }
-    
     function getRevokeFee() public view returns (uint256) {
         return revokeFee;
     }
