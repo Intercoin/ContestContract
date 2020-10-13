@@ -44,11 +44,11 @@ contract ContestBase is Ownable {
         
         bool active;    // stage will be active after riched minAmount
         bool completed; // true if stage already processed
-        uint256 startBlock;
-        uint256 contestPeriod;
-        uint256 votePeriod;
-        uint256 revokePeriod;
-        uint256 endBlock;
+        uint256 startTimestampUtc;
+        uint256 contestPeriod; // in seconds
+        uint256 votePeriod; // in seconds
+        uint256 revokePeriod; // in seconds
+        uint256 endTimestampUtc;
         EnumerableSet.AddressSet contestsList;
         EnumerableSet.AddressSet pledgesList;
         EnumerableSet.AddressSet judgesList;
@@ -119,14 +119,14 @@ contract ContestBase is Ownable {
     }
  
     modifier canPledge(uint256 stageID, uint256 contestID) {
-        uint256 endContestBlock = (_contests[contestID]._stages[stageID].startBlock).add(_contests[contestID]._stages[stageID].contestPeriod);
+        uint256 endContestTimestamp = (_contests[contestID]._stages[stageID].startTimestampUtc).add(_contests[contestID]._stages[stageID].contestPeriod);
         require(
             (
                 (
                     _contests[contestID]._stages[stageID].active == false
                 ) || 
                 (
-                    (_contests[contestID]._stages[stageID].active == true) && (endContestBlock > block.number)
+                    (_contests[contestID]._stages[stageID].active == true) && (endContestTimestamp > now)
                 )
             ), 
             "Stage is out of contest period"
@@ -135,13 +135,13 @@ contract ContestBase is Ownable {
     }
 
     modifier canDelegateAndVote(uint256 stageID, uint256 contestID) {
-        uint256 endContestBlock = (_contests[contestID]._stages[stageID].startBlock).add(_contests[contestID]._stages[stageID].contestPeriod);
-        uint256 endVoteBlock = endContestBlock.add(_contests[contestID]._stages[stageID].votePeriod);
+        uint256 endContestTimestamp = (_contests[contestID]._stages[stageID].startTimestampUtc).add(_contests[contestID]._stages[stageID].contestPeriod);
+        uint256 endVoteTimestamp = endContestTimestamp.add(_contests[contestID]._stages[stageID].votePeriod);
         require(
             (
                 (_contests[contestID]._stages[stageID].active == true) && 
-                (endVoteBlock > block.number) && 
-                (block.number >= endContestBlock)
+                (endVoteTimestamp > now) && 
+                (now >= endContestTimestamp)
             ), 
             "Stage is out of voting period"
         );
@@ -149,12 +149,13 @@ contract ContestBase is Ownable {
     }
     
     modifier canRevoke(uint256 stageID, uint256 contestID) {
-        uint256 endVoteBlock = (_contests[contestID]._stages[stageID].startBlock).add(_contests[contestID]._stages[stageID].contestPeriod).add(_contests[contestID]._stages[stageID].votePeriod);
-        uint256 endRevokeBlock = _contests[contestID]._stages[stageID].endBlock;
+        uint256 endVoteTimestamp = (_contests[contestID]._stages[stageID].startTimestampUtc).add(_contests[contestID]._stages[stageID].contestPeriod).add(_contests[contestID]._stages[stageID].votePeriod);
+        uint256 endRevokeTimestamp = _contests[contestID]._stages[stageID].endTimestampUtc;
+        
         require(
             (
                 (
-                    (_contests[contestID]._stages[stageID].active == true) && (endRevokeBlock > block.number) && (block.number >= endVoteBlock)
+                    (_contests[contestID]._stages[stageID].active == true) && (endRevokeTimestamp > now) && (now >= endVoteTimestamp)
                 )
             ), 
             "Stage is out of revoke period"
@@ -163,7 +164,7 @@ contract ContestBase is Ownable {
     }
     
     modifier canClaim(uint256 stageID, uint256 contestID) {
-        uint256 endBlock = _contests[contestID]._stages[stageID].endBlock;
+        uint256 endTimestampUtc = _contests[contestID]._stages[stageID].endTimestampUtc;
         require(
             (
                 (
@@ -171,7 +172,7 @@ contract ContestBase is Ownable {
                     (_contests[contestID]._stages[stageID].participants[_msgSender()].claimed == false) && 
                     (_contests[contestID]._stages[stageID].completed == true) && 
                     (_contests[contestID]._stages[stageID].active == true) && 
-                    (block.number > endBlock)
+                    (now > endTimestampUtc)
                 )
             ), 
             "Stage have not completed or sender has already claimed or revoked"
@@ -242,7 +243,7 @@ contract ContestBase is Ownable {
             (
                 (_contests[contestID]._stages[stageID].completed == false) &&
                 (_contests[contestID]._stages[stageID].active == true) &&
-                (_contests[contestID]._stages[stageID].endBlock < block.number)
+                (_contests[contestID]._stages[stageID].endTimestampUtc < now)
             ), 
             string("Last stage have not ended yet")
         );
@@ -259,9 +260,9 @@ contract ContestBase is Ownable {
 	/**
      * @param stagesCount count of stages for first Contest
      * @param stagesMinAmount array of minimum amount that need to reach at each stage
-     * @param contestPeriodInBlocksCount duration in blocks  for contest period(exclude before reach minimum amount)
-     * @param votePeriodInBlocksCount duration in blocks  for voting period
-     * @param revokePeriodInBlocksCount duration in blocks  for revoking period
+     * @param contestPeriodInSeconds duration in seconds  for contest period(exclude before reach minimum amount)
+     * @param votePeriodInSeconds duration in seconds  for voting period
+     * @param revokePeriodInSeconds duration in seconds  for revoking period
      * @param percentForWinners array of values in percentages of overall amount that will gain winners 
      * @param judges array of judges' addresses. if empty than everyone can vote
      * 
@@ -269,9 +270,9 @@ contract ContestBase is Ownable {
     function createContest (
         uint256 stagesCount,
         uint256[] memory stagesMinAmount,
-        uint256 contestPeriodInBlocksCount,
-        uint256 votePeriodInBlocksCount,
-        uint256 revokePeriodInBlocksCount,
+        uint256 contestPeriodInSeconds,
+        uint256 votePeriodInSeconds,
+        uint256 revokePeriodInSeconds,
         uint256[] memory percentForWinners,
         address[] memory judges
     ) 
@@ -287,9 +288,9 @@ contract ContestBase is Ownable {
             _contests[currentContestNumber]._stages[stage].minAmount = stagesMinAmount[stage];
             _contests[currentContestNumber]._stages[stage].winnersLock = false;
             _contests[currentContestNumber]._stages[stage].active = false;
-            _contests[currentContestNumber]._stages[stage].contestPeriod = contestPeriodInBlocksCount;
-            _contests[currentContestNumber]._stages[stage].votePeriod = votePeriodInBlocksCount;
-            _contests[currentContestNumber]._stages[stage].revokePeriod = revokePeriodInBlocksCount;
+            _contests[currentContestNumber]._stages[stage].contestPeriod = contestPeriodInSeconds;
+            _contests[currentContestNumber]._stages[stage].votePeriod = votePeriodInSeconds;
+            _contests[currentContestNumber]._stages[stage].revokePeriod = revokePeriodInSeconds;
             
             for (uint256 i = 0; i < judges.length; i++) {
                 _contests[currentContestNumber]._stages[stage].judgesList.add(judges[i]);
@@ -318,7 +319,7 @@ contract ContestBase is Ownable {
             (_contests[contestID]._stages[stageID].winnersLock == false) &&
             (
                 (_contests[contestID]._stages[stageID].active == false) ||
-                ((_contests[contestID]._stages[stageID].active == true) && (_contests[contestID]._stages[stageID].endBlock > block.number))
+                ((_contests[contestID]._stages[stageID].active == true) && (_contests[contestID]._stages[stageID].endTimestampUtc > now))
             ) && 
             (_contests[contestID]._stages[stageID].completed == false)
         ) {
@@ -554,16 +555,16 @@ contract ContestBase is Ownable {
             (_contests[contestID]._stages[stageID].amount >= _contests[contestID]._stages[stageID].minAmount)
         ) {
             _contests[contestID]._stages[stageID].active = true;
-            // fill blocknumbers
-            _contests[contestID]._stages[stageID].startBlock = block.number;
-            _contests[contestID]._stages[stageID].endBlock = (block.number)
+            // fill time
+            _contests[contestID]._stages[stageID].startTimestampUtc = now;
+            _contests[contestID]._stages[stageID].endTimestampUtc = (now)
                 .add(_contests[contestID]._stages[stageID].contestPeriod)
                 .add(_contests[contestID]._stages[stageID].votePeriod)
                 .add(_contests[contestID]._stages[stageID].revokePeriod);
             emit StageStartAnnounced(stageID, contestID);
         } else if (
             (_contests[contestID]._stages[stageID].active == true) && 
-            (_contests[contestID]._stages[stageID].endBlock < block.number)
+            (_contests[contestID]._stages[stageID].endTimestampUtc < now)
         ) {
             // run complete
 	        _complete(stageID, contestID);

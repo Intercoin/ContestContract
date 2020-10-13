@@ -50,9 +50,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                100, // contestPeriodInBlocksCount,
-                                                                100, // votePeriodInBlocksCount,
-                                                                100, // revokePeriodInBlocksCount,
+                                                                100, // contestPeriodInSeconds,
+                                                                100, // votePeriodInSeconds,
+                                                                100, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -86,9 +86,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                100, // contestPeriodInBlocksCount,
-                                                                100, // votePeriodInBlocksCount,
-                                                                100, // revokePeriodInBlocksCount,
+                                                                100, // contestPeriodInSeconds,
+                                                                100, // votePeriodInSeconds,
+                                                                100, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -117,9 +117,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                100, // contestPeriodInBlocksCount,
-                                                                100, // votePeriodInBlocksCount,
-                                                                100, // revokePeriodInBlocksCount,
+                                                                100, // contestPeriodInSeconds,
+                                                                100, // votePeriodInSeconds,
+                                                                100, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -150,9 +150,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                100, // contestPeriodInBlocksCount,
-                                                                100, // votePeriodInBlocksCount,
-                                                                100, // revokePeriodInBlocksCount,
+                                                                100, // contestPeriodInSeconds,
+                                                                100, // votePeriodInSeconds,
+                                                                100, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -182,9 +182,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                100, // contestPeriodInBlocksCount,
-                                                                100, // votePeriodInBlocksCount,
-                                                                100, // revokePeriodInBlocksCount,
+                                                                100, // contestPeriodInSeconds,
+                                                                100, // votePeriodInSeconds,
+                                                                100, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -213,9 +213,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInBlocksCount,
-                                                                10, // votePeriodInBlocksCount,
-                                                                10, // revokePeriodInBlocksCount,
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -234,10 +234,8 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, contestID, { from: accountOne, value:'0x'+(oneEther).toString(16) });
         await ContestETHOnlyInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, contestID, { from: accountOne, value:'0x'+(oneEther).toString(16) });
 
-        // pass 10 block.   to voting period
-        for (let i=0; i<10; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to voting period
+		await helper.advanceTime(10);
         
         // try to pledge again
         await truffleAssert.reverts(
@@ -245,10 +243,8 @@ contract('ContestETHOnly', (accounts) => {
             "Stage is out of contest period"
         );
         
-        // pass another 10 block. to revoke period
-        for (let i=0; i<10; i++) {
-            await helper.advanceBlock();
-        }
+        // pass another 10 seconds. to revoke period
+        await helper.advanceTime(10);
         
         // try to pledge again
         await truffleAssert.reverts(
@@ -257,15 +253,15 @@ contract('ContestETHOnly', (accounts) => {
         );
         
     });
-    
+
     it('should prevent double vote ', async () => {
         let stageID = 0;
         await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInBlocksCount,
-                                                                10, // votePeriodInBlocksCount,
-                                                                10, // revokePeriodInBlocksCount,
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -282,10 +278,9 @@ contract('ContestETHOnly', (accounts) => {
         // make some pledge to reach minimum
         await ContestETHOnlyInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, contestID, { from: accountOne, value:'0x'+(3*oneEther).toString(16) });
         
-        // pass 10 block.   to voting period
-        for (let i=0; i<10; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to voting period
+        await helper.advanceTime(10);
+        
         await ContestETHOnlyInstance.enter(stageID, contestID, { from: accountTwo });
         await ContestETHOnlyInstance.vote(accountTwo, stageID, contestID, { from: accountOne});
         await truffleAssert.reverts(
@@ -300,9 +295,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInBlocksCount,
-                                                                10, // votePeriodInBlocksCount,
-                                                                10, // revokePeriodInBlocksCount,
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -325,10 +320,8 @@ contract('ContestETHOnly', (accounts) => {
             "Stage is out of voting period"
         );
         
-        // pass 10 block.   to voting period
-        for (let i=0; i<10; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to voting period
+        await helper.advanceTime(10);
         
         await truffleAssert.reverts(
             ContestETHOnlyInstance.vote(accountTwo, stageID, contestID, { from: accountOne}),
@@ -340,10 +333,8 @@ contract('ContestETHOnly', (accounts) => {
         
         await ContestETHOnlyInstance.vote(accountTwo, stageID, contestID, { from: accountOne});
         
-        // pass another 10 block. to revoke period
-        for (let i=0; i<10; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time again. to revoke period
+        await helper.advanceTime(10);
         
         await ContestETHOnlyInstance.enter(stageID, contestID, { from: accountThree });
         await truffleAssert.reverts(
@@ -357,9 +348,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInBlocksCount,
-                                                                10, // votePeriodInBlocksCount,
-                                                                10, // revokePeriodInBlocksCount,
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -379,10 +370,8 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, contestID, { from: accountOne, value:'0x'+(3*oneEther).toString(16) });
         await ContestETHOnlyInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, contestID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
         
-        // pass 10 block.   to voting period
-        for (let i=0; i<10; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to voting period
+        await helper.advanceTime(10);
         
         await ContestETHOnlyInstance.enter(stageID, contestID, { from: accountTwo });
         
@@ -396,9 +385,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInBlocksCount,
-                                                                10, // votePeriodInBlocksCount,
-                                                                10, // revokePeriodInBlocksCount,
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -421,10 +410,8 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyMockInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, contestID, { from: accountOne, value:'0x'+(3*oneEther).toString(16) });
         let pledgeTxObj = await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, contestID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
         
-        // pass 20 block.   to revoking period
-        for (let i=0; i<20; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to revoking period
+        await helper.advanceTime(20);
         
         // make revoke 
         let revokeTxObj = await ContestETHOnlyMockInstance.revoke(stageID, contestID, { from: accountFourth});
@@ -470,9 +457,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInBlocksCount,
-                                                                10, // votePeriodInBlocksCount,
-                                                                10, // revokePeriodInBlocksCount,
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -511,10 +498,8 @@ contract('ContestETHOnly', (accounts) => {
             new BN((stageAmount).toString(16),16).toString(16),
             "Wrong Stage amount"
         );
-        // pass 10 block.   to voting period
-        for (let i=0; i<10; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to voting period
+        await helper.advanceTime(10);
         
         await ContestETHOnlyMockInstance.vote(accountFive, stageID, contestID, { from: accountOne});
         await ContestETHOnlyMockInstance.vote(accountSix, stageID, contestID, { from: accountTwo});
@@ -522,10 +507,8 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyMockInstance.vote(accountEight, stageID, contestID, { from: accountFourth});
         await ContestETHOnlyMockInstance.vote(accountNine, stageID, contestID, { from: accountTen});
         
-        // pass blocks.   to complete period
-        for (let i=0; i<20; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to complete period
+        await helper.advanceTime(20);
         
         // call complete by owner
         await ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne});
@@ -615,9 +598,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInBlocksCount,
-                                                                10, // votePeriodInBlocksCount,
-                                                                10, // revokePeriodInBlocksCount,
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -657,10 +640,8 @@ contract('ContestETHOnly', (accounts) => {
             new BN((stageAmount).toString(16),16).toString(16),
             "Wrong Stage amount"
         );
-        // pass 10 block.   to voting period
-        for (let i=0; i<10; i++) {
-            await helper.advanceBlock();
-        }
+        // pass 10 time.   to voting period
+        await helper.advanceTime(10);
         
         await ContestETHOnlyMockInstance.vote(accountFive, stageID, contestID, { from: accountOne});
         await ContestETHOnlyMockInstance.vote(accountSix, stageID, contestID, { from: accountTwo});
@@ -668,10 +649,8 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyMockInstance.vote(accountEight, stageID, contestID, { from: accountFourth});
         await ContestETHOnlyMockInstance.vote(accountNine, stageID, contestID, { from: accountTen});
         
-        // pass blocks.   to complete period
-        for (let i=0; i<20; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to complete period
+        await helper.advanceTime(20);
         
         // call complete by owner
         await ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne});
@@ -761,9 +740,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInBlocksCount,
-                                                                10, // votePeriodInBlocksCount,
-                                                                10, // revokePeriodInBlocksCount,
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -803,17 +782,13 @@ contract('ContestETHOnly', (accounts) => {
             new BN((stageAmount).toString(16),16).toString(16),
             "Wrong Stage amount"
         );
-        // pass 10 block.   to voting period
-        for (let i=0; i<10; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to voting period
+        await helper.advanceTime(10);
         
         await ContestETHOnlyMockInstance.vote(accountFive, stageID, contestID, { from: accountOne});
 
-        // pass blocks.   to complete period
-        for (let i=0; i<20; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to complete period
+        await helper.advanceTime(20);
         
         // call complete by owner
         await ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne});
@@ -892,9 +867,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInBlocksCount,
-                                                                10, // votePeriodInBlocksCount,
-                                                                10, // revokePeriodInBlocksCount,
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -935,10 +910,8 @@ contract('ContestETHOnly', (accounts) => {
             "Wrong Stage amount"
         );
         
-        // pass blocks.   to complete period
-        for (let i=0; i<30; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to complete period
+        await helper.advanceTime(30);
         
         // call complete by owner
         await ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne});
@@ -1018,9 +991,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInBlocksCount,
-                                                                10, // votePeriodInBlocksCount,
-                                                                10, // revokePeriodInBlocksCount,
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -1055,10 +1028,8 @@ contract('ContestETHOnly', (accounts) => {
         );
         const stageNumberBefore = (await ContestETHOnlyMockInstance.getStageNumber(contestID, { from: accountOne}));
         
-        // pass blocks.   to complete period
-        for (let i=0; i<30; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to complete period
+        await helper.advanceTime(30);
         
         // call complete by owner
         await ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne});
@@ -1083,9 +1054,9 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyMockInstance.createContest(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInBlocksCount,
-                                                                10, // votePeriodInBlocksCount,
-                                                                10, // revokePeriodInBlocksCount,
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
                                                                 [50,30,10], //percentForWinners,
                                                                 [] // judges
                                                                 );
@@ -1125,10 +1096,8 @@ contract('ContestETHOnly', (accounts) => {
             new BN((stageAmount).toString(16),16).toString(16),
             "Wrong Stage amount"
         );
-        // pass 10 block.   to voting period
-        for (let i=0; i<10; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to voting period
+        await helper.advanceTime(10);
         
         await ContestETHOnlyMockInstance.vote(accountFive, stageID, contestID, { from: accountOne});
         await ContestETHOnlyMockInstance.vote(accountSix, stageID, contestID, { from: accountTwo});
@@ -1136,10 +1105,8 @@ contract('ContestETHOnly', (accounts) => {
         await ContestETHOnlyMockInstance.delegate(accountThree, stageID, contestID, { from: accountFourth});
         await ContestETHOnlyMockInstance.delegate(accountThree, stageID, contestID, { from: accountTen});
         
-        // pass blocks.   to complete period
-        for (let i=0; i<20; i++) {
-            await helper.advanceBlock();
-        }
+        // pass time.   to complete period
+        await helper.advanceTime(20);
         
         // call complete by owner
         await ContestETHOnlyMockInstance.complete(stageID, contestID, { from: accountOne});
@@ -1225,5 +1192,5 @@ contract('ContestETHOnly', (accounts) => {
             "Wrong reward for loser"
         );
     });
-    
+   
 });

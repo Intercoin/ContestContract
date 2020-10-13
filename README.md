@@ -19,9 +19,9 @@ name  | type | description
 --|--|--
 stagesCount|uint256|count of stages for Contest
 stagesMinAmount|uint256|array of minimum amount that need to reach at each stage. length array should be the same as stagesCount
-contestPeriodInBlocksCount|uint256|duration in blocks  for contest period(exclude before reach minimum amount)
-votePeriodInBlocksCount|uint256|duration in blocks  for voting period
-revokePeriodInBlocksCount|uint256|duration in blocks  for revoking period
+contestPeriodInSeconds|uint256|duration in seconds  for contest period(exclude before reach minimum amount)
+votePeriodInSeconds|uint256|duration in seconds  for voting period
+revokePeriodInSeconds|uint256|duration in seconds  for revoking period
 percentForWinners|uint256[]|array of values in percentages of overall amount that will gain winners
 judges|address[]|array of judges' addresses. if empty than everyone can vote
 
@@ -101,12 +101,12 @@ contestID|uint256|Contest number
     * anyone can enter to contest calling method `enter()` and become contestant
     * anyone can leave to contest calling method `leave()` and remove itself from contestant list
     * anyone can pledge smth to contest calling method `pledge()` if didn't not become contestant earlier
-* as soon as pledging by people become more than "stagesMinAmount" Contest Period will be extended for `contestPeriodInBlocksCount` blocks. and stop there
+* as soon as pledging by people become more than "stagesMinAmount" Contest Period will be extended for `contestPeriodInSeconds` seconds. and stop there
     * emitting `StageStartAnnounced`
-* starting Voting period for `votePeriodInBlocksCount` blocks.
+* starting Voting period for `votePeriodInSeconds` seconds.
     * judge can vote for contestants
     * if judgeList was empty then anyone who pledged before can vote
-* starting Revoking period for `revokePeriodInBlocksCount` blocks.
+* starting Revoking period for `revokePeriodInSeconds` seconds.
     * anyone who pledged before can revoke own tokens with revokeFee penalty
 * Stage completed.(after any request with `stageID` and `contestID`).
     * emitting `ContestWinnerAnnounced`
