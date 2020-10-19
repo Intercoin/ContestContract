@@ -5,8 +5,31 @@ import "./openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract Contest is ContestBase {
     address token;
-    
-    constructor (address token_address) public {
+    /**
+     * @param token_address token address
+     * @param stagesCount count of stages for first Contest
+     * @param stagesMinAmount array of minimum amount that need to reach at each stage
+     * @param contestPeriodInSeconds duration in seconds  for contest period(exclude before reach minimum amount)
+     * @param votePeriodInSeconds duration in seconds  for voting period
+     * @param revokePeriodInSeconds duration in seconds  for revoking period
+     * @param percentForWinners array of values in percentages of overall amount that will gain winners 
+     * @param judges array of judges' addresses. if empty than everyone can vote
+     * 
+     */
+    constructor (
+        address token_address,
+        uint256 stagesCount,
+        uint256[] memory stagesMinAmount,
+        uint256 contestPeriodInSeconds,
+        uint256 votePeriodInSeconds,
+        uint256 revokePeriodInSeconds,
+        uint256[] memory percentForWinners,
+        address[] memory judges
+    ) 
+        ContestBase(stagesCount, stagesMinAmount, contestPeriodInSeconds, votePeriodInSeconds, revokePeriodInSeconds, percentForWinners, judges
+    ) 
+        public 
+    {
         token = token_address;
     }
     
@@ -15,7 +38,7 @@ contract Contest is ContestBase {
     }
     
     // pledge(amount) can be used to send external token into the contract, and issue internal token balance
-    function pledge(uint256 amount, uint256 stageID, uint256 contestID) public virtual override {
+    function pledge(uint256 amount, uint256 stageID) public virtual override {
         uint256 _allowedAmount = IERC20(token).allowance(_msgSender(), address(this));
         require(
             (
@@ -28,7 +51,7 @@ contract Contest is ContestBase {
         bool success = IERC20(token).transferFrom(_msgSender(), address(this), _allowedAmount);
         require(success == true, "Transfer tokens were failed"); 
         
-        _pledge(amount, stageID, contestID);
+        _pledge(amount, stageID);
     }
     
     

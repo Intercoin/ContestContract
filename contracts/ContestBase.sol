@@ -17,14 +17,12 @@ contract ContestBase is Ownable {
     // penalty for revoke tokens
     uint256 revokeFee = 10e4; // 10% mul at 1e6
     
-    uint256 internal currentContestNumber = 0;
-    
     EnumerableSet.AddressSet private _judgesWhitelist;
     EnumerableSet.AddressSet private _personsList;
     
     mapping (address => uint256) private _balances;
     
-    mapping (uint256 => Contest) internal _contests;
+    Contest _contest;
     
     struct Contest {
         uint256 stage;
@@ -77,56 +75,56 @@ contract ContestBase is Ownable {
 
     }
 
-	event ContestStart(uint256 indexed contestID);
-    event ContestComplete(uint256 indexed contestID);
-    event ContestWinnerAnnounced(uint256 indexed contestID, address[] indexed winners);
-    event StageStartAnnounced(uint256 indexed stageID, uint256 indexed contestID);
-    event StageCompleted(uint256 indexed stageID, uint256 indexed contestID);
+	event ContestStart();
+    event ContestComplete();
+    event ContestWinnerAnnounced(address[] indexed winners);
+    event StageStartAnnounced(uint256 indexed stageID);
+    event StageCompleted(uint256 indexed stageID);
     
     
 	////
 	// modifiers section
 	////
-    modifier onlyNotVotedNotDelegated(address account, uint256 stageID, uint256 contestID) {
+    modifier onlyNotVotedNotDelegated(address account, uint256 stageID) {
          require(
-             (_contests[contestID]._stages[stageID].participants[account].voted == false) && 
-             (_contests[contestID]._stages[stageID].participants[account].delegated == false), 
+             (_contest._stages[stageID].participants[account].voted == false) && 
+             (_contest._stages[stageID].participants[account].delegated == false), 
             "Person must have not voted or delegated before"
         );
         _;
     }
-    modifier judgeNotDelegatedBefore(address account, uint256 stageID, uint256 contestID) {
+    modifier judgeNotDelegatedBefore(address account, uint256 stageID) {
          require(
-             (_contests[contestID]._stages[stageID].participants[account].delegated == false), 
+             (_contest._stages[stageID].participants[account].delegated == false), 
             "Judge has been already delegated"
         );
         _;
     }
-    modifier stageActive(uint256 stageID, uint256 contestID) {
+    modifier stageActive(uint256 stageID) {
         require(
-            (_contests[contestID]._stages[stageID].active == true), 
+            (_contest._stages[stageID].active == true), 
             "Stage have still in gathering mode"
         );
         _;
     }
     
-    modifier stageNotCompleted(uint256 stageID, uint256 contestID) {
+    modifier stageNotCompleted(uint256 stageID) {
         require(
-            (_contests[contestID]._stages[stageID].completed == false), 
+            (_contest._stages[stageID].completed == false), 
             "Stage have not completed yet"
         );
         _;
     }
  
-    modifier canPledge(uint256 stageID, uint256 contestID) {
-        uint256 endContestTimestamp = (_contests[contestID]._stages[stageID].startTimestampUtc).add(_contests[contestID]._stages[stageID].contestPeriod);
+    modifier canPledge(uint256 stageID) {
+        uint256 endContestTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod);
         require(
             (
                 (
-                    _contests[contestID]._stages[stageID].active == false
+                    _contest._stages[stageID].active == false
                 ) || 
                 (
-                    (_contests[contestID]._stages[stageID].active == true) && (endContestTimestamp > now)
+                    (_contest._stages[stageID].active == true) && (endContestTimestamp > now)
                 )
             ), 
             "Stage is out of contest period"
@@ -134,12 +132,12 @@ contract ContestBase is Ownable {
         _;
     }
 
-    modifier canDelegateAndVote(uint256 stageID, uint256 contestID) {
-        uint256 endContestTimestamp = (_contests[contestID]._stages[stageID].startTimestampUtc).add(_contests[contestID]._stages[stageID].contestPeriod);
-        uint256 endVoteTimestamp = endContestTimestamp.add(_contests[contestID]._stages[stageID].votePeriod);
+    modifier canDelegateAndVote(uint256 stageID) {
+        uint256 endContestTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod);
+        uint256 endVoteTimestamp = endContestTimestamp.add(_contest._stages[stageID].votePeriod);
         require(
             (
-                (_contests[contestID]._stages[stageID].active == true) && 
+                (_contest._stages[stageID].active == true) && 
                 (endVoteTimestamp > now) && 
                 (now >= endContestTimestamp)
             ), 
@@ -148,14 +146,14 @@ contract ContestBase is Ownable {
         _;
     }
     
-    modifier canRevoke(uint256 stageID, uint256 contestID) {
-        uint256 endVoteTimestamp = (_contests[contestID]._stages[stageID].startTimestampUtc).add(_contests[contestID]._stages[stageID].contestPeriod).add(_contests[contestID]._stages[stageID].votePeriod);
-        uint256 endRevokeTimestamp = _contests[contestID]._stages[stageID].endTimestampUtc;
+    modifier canRevoke(uint256 stageID) {
+        uint256 endVoteTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod).add(_contest._stages[stageID].votePeriod);
+        uint256 endRevokeTimestamp = _contest._stages[stageID].endTimestampUtc;
         
         require(
             (
                 (
-                    (_contests[contestID]._stages[stageID].active == true) && (endRevokeTimestamp > now) && (now >= endVoteTimestamp)
+                    (_contest._stages[stageID].active == true) && (endRevokeTimestamp > now) && (now >= endVoteTimestamp)
                 )
             ), 
             "Stage is out of revoke period"
@@ -163,15 +161,15 @@ contract ContestBase is Ownable {
         _;
     }
     
-    modifier canClaim(uint256 stageID, uint256 contestID) {
-        uint256 endTimestampUtc = _contests[contestID]._stages[stageID].endTimestampUtc;
+    modifier canClaim(uint256 stageID) {
+        uint256 endTimestampUtc = _contest._stages[stageID].endTimestampUtc;
         require(
             (
                 (
-                    (_contests[contestID]._stages[stageID].participants[_msgSender()].revoked == false) && 
-                    (_contests[contestID]._stages[stageID].participants[_msgSender()].claimed == false) && 
-                    (_contests[contestID]._stages[stageID].completed == true) && 
-                    (_contests[contestID]._stages[stageID].active == true) && 
+                    (_contest._stages[stageID].participants[_msgSender()].revoked == false) && 
+                    (_contest._stages[stageID].participants[_msgSender()].claimed == false) && 
+                    (_contest._stages[stageID].completed == true) && 
+                    (_contest._stages[stageID].active == true) && 
                     (now > endTimestampUtc)
                 )
             ), 
@@ -180,57 +178,57 @@ contract ContestBase is Ownable {
         _;
     }
     
-    modifier inContestsList(uint256 stageID, uint256 contestID) {
+    modifier inContestsList(uint256 stageID) {
         require(
-             (_contests[contestID]._stages[stageID].contestsList.contains(_msgSender())), 
+             (_contest._stages[stageID].contestsList.contains(_msgSender())), 
             "Sender must be in contestant list"
         );
         _;
     }
     
-    modifier notInContestsList(uint256 stageID, uint256 contestID) {
+    modifier notInContestsList(uint256 stageID) {
         require(
-             (!_contests[contestID]._stages[stageID].contestsList.contains(_msgSender())), 
+             (!_contest._stages[stageID].contestsList.contains(_msgSender())), 
             "Sender must not be in contestant list"
         );
         _;
     }
     
-    modifier inPledgesList(uint256 stageID, uint256 contestID) {
+    modifier inPledgesList(uint256 stageID) {
         require(
-             (_contests[contestID]._stages[stageID].pledgesList.contains(_msgSender())), 
+             (_contest._stages[stageID].pledgesList.contains(_msgSender())), 
             "Sender must be in pledge list"
         );
         _;
     }
-    modifier notInPledgesList(uint256 stageID, uint256 contestID) {
+    modifier notInPledgesList(uint256 stageID) {
         require(
-             (!_contests[contestID]._stages[stageID].pledgesList.contains(_msgSender())), 
+             (!_contest._stages[stageID].pledgesList.contains(_msgSender())), 
             "Sender must not be in pledge list"
         );
         _;
     }
     
-    modifier inJudgesList(uint256 stageID, uint256 contestID) {
+    modifier inJudgesList(uint256 stageID) {
         require(
-             (_contests[contestID]._stages[stageID].judgesList.contains(_msgSender())), 
+             (_contest._stages[stageID].judgesList.contains(_msgSender())), 
             "Sender must be in judges list"
         );
         _;
     }
-    modifier notInJudgesList(uint256 stageID, uint256 contestID) {
+    modifier notInJudgesList(uint256 stageID) {
         require(
-             (!_contests[contestID]._stages[stageID].judgesList.contains(_msgSender())), 
+             (!_contest._stages[stageID].judgesList.contains(_msgSender())), 
             "Sender must not be in judges list"
         );
         _;
     }
         
-    modifier inPledgesOrJudgesList(uint256 stageID, uint256 contestID) {
+    modifier inPledgesOrJudgesList(uint256 stageID) {
         require(
              (
-                 _contests[contestID]._stages[stageID].pledgesList.contains(_msgSender()) ||
-                 _contests[contestID]._stages[stageID].judgesList.contains(_msgSender())
+                 _contest._stages[stageID].pledgesList.contains(_msgSender()) ||
+                 _contest._stages[stageID].judgesList.contains(_msgSender())
              )
              , 
             "Sender must be in pledges or judges list"
@@ -238,12 +236,12 @@ contract ContestBase is Ownable {
         _;
     }  
     
-    modifier canCompleted(uint256 stageID, uint256 contestID) {
+    modifier canCompleted(uint256 stageID) {
          require(
             (
-                (_contests[contestID]._stages[stageID].completed == false) &&
-                (_contests[contestID]._stages[stageID].active == true) &&
-                (_contests[contestID]._stages[stageID].endTimestampUtc < now)
+                (_contest._stages[stageID].completed == false) &&
+                (_contest._stages[stageID].active == true) &&
+                (_contest._stages[stageID].endTimestampUtc < now)
             ), 
             string("Last stage have not ended yet")
         );
@@ -253,10 +251,6 @@ contract ContestBase is Ownable {
 	// END of modifiers section 
 	////
 
-    constructor () public {
-        currentContestNumber = 0;
-        
-    }
 	/**
      * @param stagesCount count of stages for first Contest
      * @param stagesMinAmount array of minimum amount that need to reach at each stage
@@ -267,7 +261,7 @@ contract ContestBase is Ownable {
      * @param judges array of judges' addresses. if empty than everyone can vote
      * 
      */
-    function createContest (
+    constructor (
         uint256 stagesCount,
         uint256[] memory stagesMinAmount,
         uint256 contestPeriodInSeconds,
@@ -279,29 +273,27 @@ contract ContestBase is Ownable {
         public 
     {
         
-        currentContestNumber = currentContestNumber.add(1);
-        
         uint256 stage = 0;
         
-        _contests[currentContestNumber].stage = 0;            
+        _contest.stage = 0;            
         for (stage = 0; stage < stagesCount; stage++) {
-            _contests[currentContestNumber]._stages[stage].minAmount = stagesMinAmount[stage];
-            _contests[currentContestNumber]._stages[stage].winnersLock = false;
-            _contests[currentContestNumber]._stages[stage].active = false;
-            _contests[currentContestNumber]._stages[stage].contestPeriod = contestPeriodInSeconds;
-            _contests[currentContestNumber]._stages[stage].votePeriod = votePeriodInSeconds;
-            _contests[currentContestNumber]._stages[stage].revokePeriod = revokePeriodInSeconds;
+            _contest._stages[stage].minAmount = stagesMinAmount[stage];
+            _contest._stages[stage].winnersLock = false;
+            _contest._stages[stage].active = false;
+            _contest._stages[stage].contestPeriod = contestPeriodInSeconds;
+            _contest._stages[stage].votePeriod = votePeriodInSeconds;
+            _contest._stages[stage].revokePeriod = revokePeriodInSeconds;
             
             for (uint256 i = 0; i < judges.length; i++) {
-                _contests[currentContestNumber]._stages[stage].judgesList.add(judges[i]);
+                _contest._stages[stage].judgesList.add(judges[i]);
             }
             
             for (uint256 i = 0; i < percentForWinners.length; i++) {
-                _contests[currentContestNumber]._stages[stage].percentForWinners.add(percentForWinners[i]);
+                _contest._stages[stage].percentForWinners.add(percentForWinners[i]);
             }
         }
         
-        emit ContestStart(currentContestNumber);
+        emit ContestStart();
         
     }
 
@@ -311,17 +303,16 @@ contract ContestBase is Ownable {
 	/**
 	 * @dev show contest state
 	 * @param stageID Stage number
-	 * @param contestID Contest number
 	 */
-    function isContestOnline(uint256 stageID, uint256 contestID) public view returns (bool res){
+    function isContestOnline(uint256 stageID) public view returns (bool res){
 
         if (
-            (_contests[contestID]._stages[stageID].winnersLock == false) &&
+            (_contest._stages[stageID].winnersLock == false) &&
             (
-                (_contests[contestID]._stages[stageID].active == false) ||
-                ((_contests[contestID]._stages[stageID].active == true) && (_contests[contestID]._stages[stageID].endTimestampUtc > now))
+                (_contest._stages[stageID].active == false) ||
+                ((_contest._stages[stageID].active == true) && (_contest._stages[stageID].endTimestampUtc > now))
             ) && 
-            (_contests[contestID]._stages[stageID].completed == false)
+            (_contest._stages[stageID].completed == false)
         ) {
             res = true;
         } else {
@@ -332,116 +323,104 @@ contract ContestBase is Ownable {
     /**
      * @param amount amount to pledge
 	 * @param stageID Stage number
-	 * @param contestID Contest number
      */
-    function pledge(uint256 amount, uint256 stageID, uint256 contestID) public virtual {
-        _pledge(amount, stageID, contestID);
+    function pledge(uint256 amount, uint256 stageID) public virtual {
+        _pledge(amount, stageID);
     }
     
     /**
      * @param judge address of judge which user want to delegate own vote
 	 * @param stageID Stage number
-	 * @param contestID Contest number
      */
     function delegate(
         address judge, 
-        uint256 stageID, 
-        uint256 contestID
+        uint256 stageID
     ) 
         public
-        notInContestsList(stageID, contestID)
-        stageNotCompleted(stageID, contestID)
-        onlyNotVotedNotDelegated(_msgSender(), stageID, contestID)
-        judgeNotDelegatedBefore(judge, stageID, contestID)
+        notInContestsList(stageID)
+        stageNotCompleted(stageID)
+        onlyNotVotedNotDelegated(_msgSender(), stageID)
+        judgeNotDelegatedBefore(judge, stageID)
     {
-        _delegate(judge, stageID, contestID);
+        _delegate(judge, stageID);
     }
     
     /** 
      * @param contestantAddress address of contestant which user want to vote
 	 * @param stageID Stage number
-	 * @param contestID Contest number
      */     
     function vote(
         address contestantAddress,
-        uint256 stageID, 
-        uint256 contestID
+        uint256 stageID
     ) 
         public 
-        notInContestsList(stageID, contestID)
-        onlyNotVotedNotDelegated(_msgSender(), stageID, contestID)  
-        stageNotCompleted(stageID, contestID)
-        canDelegateAndVote(stageID, contestID)
+        notInContestsList(stageID)
+        onlyNotVotedNotDelegated(_msgSender(), stageID)  
+        stageNotCompleted(stageID)
+        canDelegateAndVote(stageID)
     {
-     
-        _vote(contestantAddress, stageID, contestID);
+        _vote(contestantAddress, stageID);
     }
     
     /**
      * @param stageID Stage number
-	 * @param contestID Contest number 
      */
     function claim(
-        uint256 stageID, 
-        uint256 contestID
+        uint256 stageID
     )
         public
-        inContestsList(stageID, contestID)
-        canClaim(stageID, contestID)
+        inContestsList(stageID)
+        canClaim(stageID)
     {
-        _contests[contestID]._stages[stageID].participants[_msgSender()].claimed = true;
-        uint prizeAmount = _contests[contestID]._stages[stageID].participants[_msgSender()].balanceAfter;
+        _contest._stages[stageID].participants[_msgSender()].claimed = true;
+        uint prizeAmount = _contest._stages[stageID].participants[_msgSender()].balanceAfter;
         _claimAfter(prizeAmount);
     }
     
     /**
      * @param stageID Stage number
-	 * @param contestID Contest number 
      */
     function enter(
-        uint256 stageID, uint256 contestID
+        uint256 stageID
     ) 
-        notInContestsList(stageID, contestID) 
-        notInPledgesList(stageID, contestID) 
-        notInJudgesList(stageID, contestID) 
+        notInContestsList(stageID) 
+        notInPledgesList(stageID) 
+        notInJudgesList(stageID) 
 
         public 
     {
-        _enter(stageID, contestID);
+        _enter(stageID);
     }
     
     /**
      * @param stageID Stage number
-	 * @param contestID Contest number 
      */   
     function leave(
-        uint256 stageID, uint256 contestID
+        uint256 stageID
     ) 
         public 
     {
-        _leave(stageID, contestID);
+        _leave(stageID);
     }
     
     /**
      * @param stageID Stage number
-	 * @param contestID Contest number 
      */
     function revoke(
-        uint256 stageID, 
-        uint256 contestID
+        uint256 stageID
     ) 
         public
-        notInContestsList(stageID, contestID)
-        stageNotCompleted(stageID, contestID)
-        canRevoke(stageID, contestID)
+        notInContestsList(stageID)
+        stageNotCompleted(stageID)
+        canRevoke(stageID)
     {
         
-        _revoke(stageID, contestID);
+        _revoke(stageID);
         
-        _contests[contestID]._stages[stageID].participants[_msgSender()].revoked == true;
+        _contest._stages[stageID].participants[_msgSender()].revoked == true;
             
-        uint revokedBalance = _contests[contestID]._stages[stageID].participants[_msgSender()].balance;
-        _contests[contestID]._stages[stageID].amount = _contests[contestID]._stages[stageID].amount.sub(revokedBalance);
+        uint revokedBalance = _contest._stages[stageID].participants[_msgSender()].balance;
+        _contest._stages[stageID].amount = _contest._stages[stageID].amount.sub(revokedBalance);
         
         revokeAfter(revokedBalance.sub(revokedBalance.mul(revokeFee).div(1e6)));
     } 
@@ -452,53 +431,49 @@ contract ContestBase is Ownable {
 	/**
      * @param judge address of judge which user want to delegate own vote
      * @param stageID Stage number
-	 * @param contestID Contest number 
      */
     function _delegate(
         address judge, 
-        uint256 stageID, 
-        uint256 contestID
+        uint256 stageID
     ) 
         internal 
-        canDelegateAndVote(stageID, contestID)
+        canDelegateAndVote(stageID)
     {
         
         // code left for possibility re-delegate
         // if (_contests[contestID]._stages[stageID].participants[_msgSender()].delegated == true) {
-        //     _revoke(stageID, contestID);
+        //     _revoke(stageID);
         // }
-        _contests[contestID]._stages[stageID].participants[_msgSender()].delegated = true;
-        _contests[contestID]._stages[stageID].participants[_msgSender()].delegateTo = judge;
-        _contests[contestID]._stages[stageID].participants[judge].delegatedBy.add(_msgSender());
+        _contest._stages[stageID].participants[_msgSender()].delegated = true;
+        _contest._stages[stageID].participants[_msgSender()].delegateTo = judge;
+        _contest._stages[stageID].participants[judge].delegatedBy.add(_msgSender());
     }
     
     /** 
      * @param contestantAddress address of contestant which user want to vote
 	 * @param stageID Stage number
-	 * @param contestID Contest number
      */ 
     function _vote(
         address contestantAddress,
-        uint256 stageID, 
-        uint256 contestID
+        uint256 stageID
     ) 
         internal
     {
            
         require(
-            _contests[contestID]._stages[stageID].contestsList.contains(contestantAddress), 
+            _contest._stages[stageID].contestsList.contains(contestantAddress), 
             "contestantAddress must be in contestant list"
         );
      
         // code left for possibility re-vote
         // if (_contests[contestID]._stages[stageID].participants[_msgSender()].voted == true) {
-        //     _revoke(stageID, contestID);
+        //     _revoke(stageID);
         // }
         //----
         
-        _contests[contestID]._stages[stageID].participants[_msgSender()].voted = true;
-        _contests[contestID]._stages[stageID].participants[_msgSender()].voteTo = contestantAddress;
-        _contests[contestID]._stages[stageID].participants[contestantAddress].votedBy.add(_msgSender());
+        _contest._stages[stageID].participants[_msgSender()].voted = true;
+        _contest._stages[stageID].participants[_msgSender()].voteTo = contestantAddress;
+        _contest._stages[stageID].participants[contestantAddress].votedBy.add(_msgSender());
     }
     
     /**
@@ -513,21 +488,19 @@ contract ContestBase is Ownable {
     
     /** 
 	 * @param stageID Stage number
-	 * @param contestID Contest number
      */ 
     function _revoke(
-        uint256 stageID, 
-        uint256 contestID
+        uint256 stageID
     ) 
         private
     {
         address addr;
-        if (_contests[contestID]._stages[stageID].participants[_msgSender()].voted == true) {
-            addr = _contests[contestID]._stages[stageID].participants[_msgSender()].voteTo;
-            _contests[contestID]._stages[stageID].participants[addr].votedBy.remove(_msgSender());
-        } else if (_contests[contestID]._stages[stageID].participants[_msgSender()].delegated == true) {
-            addr = _contests[contestID]._stages[stageID].participants[_msgSender()].delegateTo;
-            _contests[contestID]._stages[stageID].participants[addr].delegatedBy.remove(_msgSender());
+        if (_contest._stages[stageID].participants[_msgSender()].voted == true) {
+            addr = _contest._stages[stageID].participants[_msgSender()].voteTo;
+            _contest._stages[stageID].participants[addr].votedBy.remove(_msgSender());
+        } else if (_contest._stages[stageID].participants[_msgSender()].delegated == true) {
+            addr = _contest._stages[stageID].participants[_msgSender()].delegateTo;
+            _contest._stages[stageID].participants[addr].delegatedBy.remove(_msgSender());
         } else {
             
         }
@@ -537,37 +510,35 @@ contract ContestBase is Ownable {
      * @dev This method triggers the complete(stage), if it hasn't successfully been triggered yet in the contract. 
      * The complete(stage) method works like this: if stageBlockNumber[N] has not passed yet then reject. Otherwise it wraps up the stage as follows, and then increments 'stage':
      * @param stageID Stage number
-	 * @param contestID Contest number
      */
-    function complete(uint256 stageID, uint256 contestID) public onlyOwner canCompleted(stageID, contestID) {
-       _complete(stageID, contestID);
+    function complete(uint256 stageID) public onlyOwner canCompleted(stageID) {
+       _complete(stageID);
     }
   
 	/**
 	 * @dev need to be used after each pledge/enter
      * @param stageID Stage number
-	 * @param contestID Contest number
 	 */
-	function _turnStageToActive(uint256 stageID, uint256 contestID) internal {
+	function _turnStageToActive(uint256 stageID) internal {
 	    
         if (
-            (_contests[contestID]._stages[stageID].active == false) && 
-            (_contests[contestID]._stages[stageID].amount >= _contests[contestID]._stages[stageID].minAmount)
+            (_contest._stages[stageID].active == false) && 
+            (_contest._stages[stageID].amount >= _contest._stages[stageID].minAmount)
         ) {
-            _contests[contestID]._stages[stageID].active = true;
+            _contest._stages[stageID].active = true;
             // fill time
-            _contests[contestID]._stages[stageID].startTimestampUtc = now;
-            _contests[contestID]._stages[stageID].endTimestampUtc = (now)
-                .add(_contests[contestID]._stages[stageID].contestPeriod)
-                .add(_contests[contestID]._stages[stageID].votePeriod)
-                .add(_contests[contestID]._stages[stageID].revokePeriod);
-            emit StageStartAnnounced(stageID, contestID);
+            _contest._stages[stageID].startTimestampUtc = now;
+            _contest._stages[stageID].endTimestampUtc = (now)
+                .add(_contest._stages[stageID].contestPeriod)
+                .add(_contest._stages[stageID].votePeriod)
+                .add(_contest._stages[stageID].revokePeriod);
+            emit StageStartAnnounced(stageID);
         } else if (
-            (_contests[contestID]._stages[stageID].active == true) && 
-            (_contests[contestID]._stages[stageID].endTimestampUtc < now)
+            (_contest._stages[stageID].active == true) && 
+            (_contest._stages[stageID].endTimestampUtc < now)
         ) {
             // run complete
-	        _complete(stageID, contestID);
+	        _complete(stageID);
 	    } else {
             
         }
@@ -577,105 +548,97 @@ contract ContestBase is Ownable {
 	/**
 	 * @dev logic for ending stage (calculate weights, pick winners, reward losers, turn to next stage)
      * @param stageID Stage number
-	 * @param contestID Contest number
 	 */
-	function _complete(uint256 stageID, uint256 contestID) internal  {
-	    emit StageCompleted(stageID, contestID);
+	function _complete(uint256 stageID) internal  {
+	    emit StageCompleted(stageID);
 
-	    _calculateWeights(stageID, contestID);
-	    uint256 percentWinnersLeft = _rewardWinners(stageID, contestID);
-	    _rewardLosers(stageID, contestID, percentWinnersLeft);
+	    _calculateWeights(stageID);
+	    uint256 percentWinnersLeft = _rewardWinners(stageID);
+	    _rewardLosers(stageID, percentWinnersLeft);
 	 
 	    //mark stage completed
-	    _contests[contestID]._stages[stageID].completed = true;
+	    _contest._stages[stageID].completed = true;
 	    
 	    // switch to next stage
-	    if (_contests[contestID].stagesCount == stageID.add(1)) {
+	    if (_contest.stagesCount == stageID.add(1)) {
             // just complete if last stage 
             
-            emit ContestComplete(contestID);
+            emit ContestComplete();
         } else {
             // increment stage
-            _contests[contestID].stage = (_contests[contestID].stage).add(1);
+            _contest.stage = (_contest.stage).add(1);
         }
 	}
 	
 	/**
 	 * @param amount amount
      * @param stageID Stage number
-	 * @param contestID Contest number
 	 */
     function _pledge(
         uint256 amount, 
-        uint256 stageID, 
-        uint256 contestID
+        uint256 stageID
     ) 
         internal 
-        canPledge(stageID, contestID) 
-        notInContestsList(stageID, contestID) 
+        canPledge(stageID) 
+        notInContestsList(stageID) 
     {
-        _createParticipant(stageID, contestID);
+        _createParticipant(stageID);
         
-        _contests[contestID]._stages[stageID].pledgesList.add(_msgSender());
+        _contest._stages[stageID].pledgesList.add(_msgSender());
         
         // accumalate balance in current stage
-        _contests[contestID]._stages[stageID].participants[_msgSender()].balance = (
-            _contests[contestID]._stages[stageID].participants[_msgSender()].balance
+        _contest._stages[stageID].participants[_msgSender()].balance = (
+            _contest._stages[stageID].participants[_msgSender()].balance
             ).add(amount);
             
         // accumalate overall stage balance
-        _contests[contestID]._stages[stageID].amount = (
-            _contests[contestID]._stages[stageID].amount
+        _contest._stages[stageID].amount = (
+            _contest._stages[stageID].amount
             ).add(amount);
         
-        _turnStageToActive(stageID, contestID);
+        _turnStageToActive(stageID);
 
     }
     
     /**
      * @param stageID Stage number
-	 * @param contestID Contest number
 	 */
     function _enter(
-        uint256 stageID, 
-        uint256 contestID
+        uint256 stageID
     ) 
         internal 
-        notInContestsList(stageID, contestID) 
-        notInPledgesList(stageID, contestID) 
-        notInJudgesList(stageID, contestID) 
+        notInContestsList(stageID) 
+        notInPledgesList(stageID) 
+        notInJudgesList(stageID) 
     {
-        _turnStageToActive(stageID, contestID);
-        _createParticipant(stageID, contestID);
-        _contests[contestID]._stages[stageID].contestsList.add(_msgSender());
+        _turnStageToActive(stageID);
+        _createParticipant(stageID);
+        _contest._stages[stageID].contestsList.add(_msgSender());
     }
     
     /**
      * @param stageID Stage number
-	 * @param contestID Contest number
 	 */
     function _leave(
-        uint256 stageID, 
-        uint256 contestID
+        uint256 stageID
     ) 
         internal 
-        inContestsList(stageID, contestID) 
+        inContestsList(stageID) 
     {
-        _contests[contestID]._stages[stageID].contestsList.remove(_msgSender());
-        _contests[contestID]._stages[stageID].participants[msg.sender].active = false;
+        _contest._stages[stageID].contestsList.remove(_msgSender());
+        _contest._stages[stageID].participants[msg.sender].active = false;
     }
     
     /**
      * @param stageID Stage number
-	 * @param contestID Contest number
 	 */     
-    function _createParticipant(uint256 stageID, uint256 contestID) internal {
-        if (_contests[contestID]._stages[stageID].participants[_msgSender()].active) {
+    function _createParticipant(uint256 stageID) internal {
+        if (_contest._stages[stageID].participants[_msgSender()].active) {
              // ---
         } else {
             Participant memory p;
-            _contests[contestID]._stages[stageID].participants[_msgSender()] = p;
-            _contests[contestID]._stages[stageID].participants[_msgSender()].active = true;
+            _contest._stages[stageID].participants[_msgSender()] = p;
+            _contest._stages[stageID].participants[_msgSender()].active = true;
         }
     }
     
@@ -685,9 +648,8 @@ contract ContestBase is Ownable {
 	
 	/**
      * @param stageID Stage number
-	 * @param contestID Contest number
 	 */
-	function _calculateWeights(uint256 stageID, uint256 contestID) private {
+	function _calculateWeights(uint256 stageID) private {
 	       
         // loop via contestsList 
         // find it in participant 
@@ -702,23 +664,23 @@ contract ContestBase is Ownable {
 	    address addrVotestant;
 	    address addrWhoDelegated;
 	    
-	    for (uint256 i = 0; i < _contests[contestID]._stages[stageID].contestsList.length(); i++) {
-	        addrContestant = _contests[contestID]._stages[stageID].contestsList.at(i);
-	        for (uint256 j = 0; j < _contests[contestID]._stages[stageID].participants[addrContestant].votedBy.length(); j++) {
-	            addrVotestant = _contests[contestID]._stages[stageID].participants[addrContestant].votedBy.at(j);
+	    for (uint256 i = 0; i < _contest._stages[stageID].contestsList.length(); i++) {
+	        addrContestant = _contest._stages[stageID].contestsList.at(i);
+	        for (uint256 j = 0; j < _contest._stages[stageID].participants[addrContestant].votedBy.length(); j++) {
+	            addrVotestant = _contest._stages[stageID].participants[addrContestant].votedBy.at(j);
 	            
                 // sum votes
-                _contests[contestID]._stages[stageID].participants[addrContestant].weight = 
-                _contests[contestID]._stages[stageID].participants[addrContestant].weight.add(
-                    _contests[contestID]._stages[stageID].participants[addrVotestant].balance
+                _contest._stages[stageID].participants[addrContestant].weight = 
+                _contest._stages[stageID].participants[addrContestant].weight.add(
+                    _contest._stages[stageID].participants[addrVotestant].balance
                 );
                 
                 // sum all delegated if exists
-                for (uint256 k = 0; k < _contests[contestID]._stages[stageID].participants[addrVotestant].delegatedBy.length(); k++) {
-                    addrWhoDelegated = _contests[contestID]._stages[stageID].participants[addrVotestant].delegatedBy.at(k);
-                    _contests[contestID]._stages[stageID].participants[addrContestant].weight = 
-	                _contests[contestID]._stages[stageID].participants[addrContestant].weight.add(
-	                    _contests[contestID]._stages[stageID].participants[addrWhoDelegated].balance
+                for (uint256 k = 0; k < _contest._stages[stageID].participants[addrVotestant].delegatedBy.length(); k++) {
+                    addrWhoDelegated = _contest._stages[stageID].participants[addrVotestant].delegatedBy.at(k);
+                    _contest._stages[stageID].participants[addrContestant].weight = 
+	                _contest._stages[stageID].participants[addrContestant].weight.add(
+	                    _contest._stages[stageID].participants[addrWhoDelegated].balance
 	                );
                 }
 	             
@@ -729,22 +691,21 @@ contract ContestBase is Ownable {
 	
 	/**
      * @param stageID Stage number
-	 * @param contestID Contest number
 	 * @return percentLeft percents left if count of winners more that prizes. in that cases left percent distributed to losers
 	 */
-	function _rewardWinners(uint256 stageID, uint256 contestID) private returns(uint256 percentLeft)  {
+	function _rewardWinners(uint256 stageID) private returns(uint256 percentLeft)  {
 	    
         uint256 indexPrize = 0;
 	    address addrContestant;
 	    
-	    uint256 lenContestList = _contests[contestID]._stages[stageID].contestsList.length();
+	    uint256 lenContestList = _contest._stages[stageID].contestsList.length();
 	    if (lenContestList>0)  {
 	    
     	    uint256[] memory weight = new uint256[](lenContestList);
     
     	    for (uint256 i = 0; i < lenContestList; i++) {
-    	        addrContestant = _contests[contestID]._stages[stageID].contestsList.at(i);
-                weight[i] = _contests[contestID]._stages[stageID].participants[addrContestant].weight;
+    	        addrContestant = _contest._stages[stageID].contestsList.at(i);
+                weight[i] = _contest._stages[stageID].participants[addrContestant].weight;
     	    }
     	    weight = sortAsc(weight);
     
@@ -754,35 +715,35 @@ contract ContestBase is Ownable {
             // so use  "for (uint i = a.length; i > 0; i--)" and in code "a[i-1]" 
     	    for (uint256 i = weight.length; i > 0; i--) {
     	       for (uint256 j = 0; j < lenContestList; j++) {
-    	            addrContestant = _contests[contestID]._stages[stageID].contestsList.at(j);
+    	            addrContestant = _contest._stages[stageID].contestsList.at(j);
     	            if (
     	                (weight[i-1] > 0) &&
-    	                (_contests[contestID]._stages[stageID].participants[addrContestant].weight == weight[i-1]) &&
-    	                (_contests[contestID]._stages[stageID].participants[addrContestant].won == false) &&
-    	                (_contests[contestID]._stages[stageID].participants[addrContestant].active == true) &&
-    	                (_contests[contestID]._stages[stageID].participants[addrContestant].revoked == false)
+    	                (_contest._stages[stageID].participants[addrContestant].weight == weight[i-1]) &&
+    	                (_contest._stages[stageID].participants[addrContestant].won == false) &&
+    	                (_contest._stages[stageID].participants[addrContestant].active == true) &&
+    	                (_contest._stages[stageID].participants[addrContestant].revoked == false)
     	            ) {
     	                 
-    	                _contests[contestID]._stages[stageID].participants[addrContestant].balanceAfter = (_contests[contestID]._stages[stageID].amount)
-    	                    .mul(_contests[contestID]._stages[stageID].percentForWinners.at(indexPrize))
+    	                _contest._stages[stageID].participants[addrContestant].balanceAfter = (_contest._stages[stageID].amount)
+    	                    .mul(_contest._stages[stageID].percentForWinners.at(indexPrize))
     	                    .div(100);
                     
-                        _contests[contestID]._stages[stageID].participants[addrContestant].won = true;
+                        _contest._stages[stageID].participants[addrContestant].won = true;
                         
                         indexPrize++;
                         break;
     	            }
     	        }
-    	        if (indexPrize >= _contests[contestID]._stages[stageID].percentForWinners.length()) {
+    	        if (indexPrize >= _contest._stages[stageID].percentForWinners.length()) {
     	            break;
     	        }
     	    }
 	    }
 	    
 	    percentLeft = 0;
-	    if (indexPrize < _contests[contestID]._stages[stageID].percentForWinners.length()) {
-	       for (uint256 i = indexPrize; i < _contests[contestID]._stages[stageID].percentForWinners.length(); i++) {
-	           percentLeft = percentLeft.add(_contests[contestID]._stages[stageID].percentForWinners.at(i));
+	    if (indexPrize < _contest._stages[stageID].percentForWinners.length()) {
+	       for (uint256 i = indexPrize; i < _contest._stages[stageID].percentForWinners.length(); i++) {
+	           percentLeft = percentLeft.add(_contest._stages[stageID].percentForWinners.at(i));
 	       }
 	    }
 	    return percentLeft;
@@ -790,49 +751,48 @@ contract ContestBase is Ownable {
 	
     /**
      * @param stageID Stage number
-	 * @param contestID Contest number
 	 * @param prizeWinLeftPercent percents left if count of winners more that prizes. in that cases left percent distributed to losers
 	 */
-	function _rewardLosers(uint256 stageID, uint256 contestID, uint256 prizeWinLeftPercent) private {
+	function _rewardLosers(uint256 stageID, uint256 prizeWinLeftPercent) private {
 	    // calculate left percent
 	    // calculate howmuch participant loose
 	    // calculate and apply left weight
 	    address addrContestant;
 	    uint256 leftPercent = 100;
 	    
-	    uint256 prizecount = _contests[contestID]._stages[stageID].percentForWinners.length();
+	    uint256 prizecount = _contest._stages[stageID].percentForWinners.length();
 	    for (uint256 i = 0; i < prizecount; i++) {
-	        leftPercent = leftPercent.sub(_contests[contestID]._stages[stageID].percentForWinners.at(i));
+	        leftPercent = leftPercent.sub(_contest._stages[stageID].percentForWinners.at(i));
 	    }
 
 	    leftPercent = leftPercent.add(prizeWinLeftPercent); 
 	    
 	    uint256 loserParticipants = 0;
 	    if (leftPercent > 0) {
-	        for (uint256 j = 0; j < _contests[contestID]._stages[stageID].contestsList.length(); j++) {
-	            addrContestant = _contests[contestID]._stages[stageID].contestsList.at(j);
+	        for (uint256 j = 0; j < _contest._stages[stageID].contestsList.length(); j++) {
+	            addrContestant = _contest._stages[stageID].contestsList.at(j);
 	            
 	            if (
-	                (_contests[contestID]._stages[stageID].participants[addrContestant].won == false) &&
-	                (_contests[contestID]._stages[stageID].participants[addrContestant].active == true) &&
-	                (_contests[contestID]._stages[stageID].participants[addrContestant].revoked == false)
+	                (_contest._stages[stageID].participants[addrContestant].won == false) &&
+	                (_contest._stages[stageID].participants[addrContestant].active == true) &&
+	                (_contest._stages[stageID].participants[addrContestant].revoked == false)
 	            ) {
 	                loserParticipants++;
 	            }
 	        }
 
 	        if (loserParticipants > 0) {
-	            uint256 rewardLoser = (_contests[contestID]._stages[stageID].amount).mul(leftPercent).div(100).div(loserParticipants);
+	            uint256 rewardLoser = (_contest._stages[stageID].amount).mul(leftPercent).div(100).div(loserParticipants);
 	            
-	            for (uint256 j = 0; j < _contests[contestID]._stages[stageID].contestsList.length(); j++) {
-    	            addrContestant = _contests[contestID]._stages[stageID].contestsList.at(j);
+	            for (uint256 j = 0; j < _contest._stages[stageID].contestsList.length(); j++) {
+    	            addrContestant = _contest._stages[stageID].contestsList.at(j);
     	            
     	            if (
-    	                (_contests[contestID]._stages[stageID].participants[addrContestant].won == false) &&
-    	                (_contests[contestID]._stages[stageID].participants[addrContestant].active == true) &&
-    	                (_contests[contestID]._stages[stageID].participants[addrContestant].revoked == false)
+    	                (_contest._stages[stageID].participants[addrContestant].won == false) &&
+    	                (_contest._stages[stageID].participants[addrContestant].active == true) &&
+    	                (_contest._stages[stageID].participants[addrContestant].revoked == false)
     	            ) {
-    	                _contests[contestID]._stages[stageID].participants[addrContestant].balanceAfter = rewardLoser;
+    	                _contest._stages[stageID].participants[addrContestant].balanceAfter = rewardLoser;
     	            }
     	        }
 	        }

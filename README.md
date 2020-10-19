@@ -2,18 +2,7 @@
 Helps people contribute money to a project, and choose judges to distribute it for various solutions.
 
 # Deploy
-when deploy it is no need to pass parameters in to constructor
-
-# Overview
-once installed will be use methods:
-
-## Settings
-name|type|value|description
---|--|--|--
-revokeFee|uint256|10e4|10% mul at 1e6. penalty for revoke tokens
-
-## Methods
-#### createContest
+when deploy it is need to pass parameters in to constructor
 Params:
 name  | type | description
 --|--|--
@@ -25,13 +14,22 @@ revokePeriodInSeconds|uint256|duration in seconds  for revoking period
 percentForWinners|uint256[]|array of values in percentages of overall amount that will gain winners
 judges|address[]|array of judges' addresses. if empty than everyone can vote
 
+## Settings
+name|type|value|description
+--|--|--|--
+revokeFee|uint256|10e4|10% mul at 1e6. penalty for revoke tokens
+
+# Overview
+once installed will be use methods:
+
+## Methods
+
 #### isContestOnline
-Checking online for Contest with number = ContestID
+Checking online Contest
 Params:
 name  | type | description
 --|--|--
 stageID|uint256|Stage number
-contestID|uint256|Contest number
 
 #### pledge
 can be used only with Constest.sol to send external token into the contract, and issue internal token balance
@@ -40,17 +38,15 @@ name  | type | description
 --|--|--
 amount|uint256|amount to pledge
 stageID|uint256|Stage number
-contestID|uint256|Contest number
 
 #### pledgeETH
-can be used only with ConstestEWETHOnly.sol to send ETH into the contract, and issue internal token balance
+can be used only with ConstestETHOnly.sol to send ETH into the contract, and issue internal token balance
 Note that ETH need to send with transaction/ not directly to contract via native `recieve()`
 Params:
 name  | type | description
 --|--|--
 amount|uint256|amount to pledge
 stageID|uint256|Stage number
-contestID|uint256|Contest number
     
 #### delegate
 Params:
@@ -58,7 +54,6 @@ name  | type | description
 --|--|--
 judge|address|address of judge which user want to delegate own vote
 stageID|uint256|Stage number
-contestID|uint256|Contest number
 
 #### vote
 Params:
@@ -66,35 +61,30 @@ name  | type | description
 --|--|--
 contestantAddress|address|address of contestant which user want to vote
 stageID|uint256|Stage number
-contestID|uint256|Contest number
 
 #### claim
 Params:
 name  | type | description
 --|--|--
 stageID|uint256|Stage number
-contestID|uint256|Contest number
 
 #### enter
 Params:
 name  | type | description
 --|--|--
 stageID|uint256|Stage number
-contestID|uint256|Contest number
 
 #### leave
 Params:
 name  | type | description
 --|--|--
 stageID|uint256|Stage number
-contestID|uint256|Contest number
 
 #### revoke
 Params:
 name  | type | description
 --|--|--
 stageID|uint256|Stage number
-contestID|uint256|Contest number
 
 ## Lifecycle of Contest
 * creation Contest.  emitting event `ContestStart`. Starting Contest Period with `StageID` = 0
@@ -108,7 +98,7 @@ contestID|uint256|Contest number
     * if judgeList was empty then anyone who pledged before can vote
 * starting Revoking period for `revokePeriodInSeconds` seconds.
     * anyone who pledged before can revoke own tokens with revokeFee penalty
-* Stage completed.(after any request with `stageID` and `contestID`).
+* Stage completed.(after any request with `stageID`).
     * emitting `ContestWinnerAnnounced`
     * if winners exists, then
         * reward winners
