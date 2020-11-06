@@ -38,7 +38,7 @@ contract Contest is ContestBase {
     }
     
     // pledge(amount) can be used to send external token into the contract, and issue internal token balance
-    function pledge(uint256 amount, uint256 stageID) public virtual override {
+    function pledge(uint256 amount, uint256 stageID) public virtual override nonReentrant() {
         uint256 _allowedAmount = IERC20(token).allowance(_msgSender(), address(this));
         require(
             (
@@ -55,12 +55,12 @@ contract Contest is ContestBase {
     }
     
     
-    function revokeAfter(uint256 amount) internal virtual override {
+    function revokeAfter(uint256 amount) internal virtual override nonReentrant() {
         // todo: 0 return back to user 
         bool success = IERC20(token).transfer(_msgSender(),amount);
         require(success == true, 'Transfer tokens were failed');    
     }
-    function _claimAfter(uint256 amount) internal virtual override {
+    function _claimAfter(uint256 amount) internal virtual override nonReentrant() {
         bool success = IERC20(token).transfer(_msgSender(),amount);
         require(success == true, 'Transfer tokens were failed');    
     }

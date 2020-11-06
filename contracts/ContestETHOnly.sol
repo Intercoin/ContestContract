@@ -36,13 +36,13 @@ contract ContestETHOnly is ContestBase {
         require(true == false, "Method does not support. Send ETH with pledgeETH() method");
     }
     
-    function pledgeETH(uint256 amount, uint256 stageID) public payable {
+    function pledgeETH(uint256 amount, uint256 stageID) public payable nonReentrant() {
         require (msg.value == amount, "Sent ETH does not equal with amount");
         _pledge(msg.value, stageID);
     }
     
     
-    function revokeAfter(uint256 amount) internal virtual override {
+    function revokeAfter(uint256 amount) internal virtual override nonReentrant() {
 
         // parameter "revokeFee" have already applied 
         address payable addr1 = payable(_msgSender()); // correct since Solidity >= 0.6.0
@@ -50,7 +50,7 @@ contract ContestETHOnly is ContestBase {
         require(success == true, 'Transfer ether was failed'); 
         
     }
-    function _claimAfter(uint256 amount) internal virtual override {
+    function _claimAfter(uint256 amount) internal virtual override nonReentrant() {
         address payable addr1 = payable(_msgSender()); // correct since Solidity >= 0.6.0
         bool success = addr1.send(amount);
         require(success == true, 'Transfer ether was failed'); 

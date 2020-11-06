@@ -3,8 +3,9 @@ pragma solidity >=0.6.0 <0.7.0;
 import "./openzeppelin-contracts/contracts/math/SafeMath.sol";
 import "./openzeppelin-contracts/contracts/utils/EnumerableSet.sol";
 import "./openzeppelin-contracts/contracts/access/Ownable.sol";
+import "./openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
-contract ContestBase is Ownable {
+contract ContestBase is Ownable, ReentrancyGuard {
     
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
