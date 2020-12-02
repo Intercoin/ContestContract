@@ -38,15 +38,16 @@ contract('ContestETHOnly', (accounts) => {
     
     it('should disable recieve() method', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
-                                                                3, // stagesCount,
-                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
-                                                                100, // contestPeriodInSeconds,
-                                                                100, // votePeriodInSeconds,
-                                                                100, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
+                                        3, // stagesCount,
+                                        ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                        100, // contestPeriodInSeconds,
+                                        100, // votePeriodInSeconds,
+                                        100, // revokePeriodInSeconds,
+                                        [50,30,10], //percentForWinners,
+                                        [] // judges
+                                        );
         
         const amountETHSendToContract = 1*10**18; // 1ETH
         // send ETH to Contract
@@ -64,7 +65,8 @@ contract('ContestETHOnly', (accounts) => {
     
     it('should enter in active stage', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInSeconds,
@@ -86,7 +88,8 @@ contract('ContestETHOnly', (accounts) => {
     
     it('should leave in active stage if entered before', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInSeconds,
@@ -111,7 +114,8 @@ contract('ContestETHOnly', (accounts) => {
     
     it('should prevent pledge if entered before', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInSeconds,
@@ -133,7 +137,8 @@ contract('ContestETHOnly', (accounts) => {
     
     it('should pledge before and during contestPeriod', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInSeconds,
@@ -154,7 +159,8 @@ contract('ContestETHOnly', (accounts) => {
     
     it('should prevent pledge in voting or revoking periods', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
@@ -191,7 +197,8 @@ contract('ContestETHOnly', (accounts) => {
 
     it('should prevent double vote ', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
@@ -218,7 +225,8 @@ contract('ContestETHOnly', (accounts) => {
     
     it('should prevent vote outside of voting period', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
@@ -262,7 +270,8 @@ contract('ContestETHOnly', (accounts) => {
     
     it('should delegate to some1', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
@@ -288,7 +297,8 @@ contract('ContestETHOnly', (accounts) => {
 
     it('should revoke on revoking period', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
@@ -349,7 +359,8 @@ contract('ContestETHOnly', (accounts) => {
   
     it('Stage Workflow: should get correct prizes for winners&losers', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
@@ -480,7 +491,8 @@ contract('ContestETHOnly', (accounts) => {
     
     it('Stage Workflow: winners\'s same weights(order by entering)', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
@@ -612,7 +624,8 @@ contract('ContestETHOnly', (accounts) => {
   
     it('Stage Workflow: the one winner with 3 contest\'s prizes', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
@@ -728,7 +741,8 @@ contract('ContestETHOnly', (accounts) => {
     
     it('Stage Workflow: there are no winners', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
@@ -842,7 +856,8 @@ contract('ContestETHOnly', (accounts) => {
     
     it('Stage Workflow: there are no entered', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
@@ -895,7 +910,8 @@ contract('ContestETHOnly', (accounts) => {
 
     it('Stage Workflow: test with delegation', async () => {
         let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new(
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
                                                                 ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,

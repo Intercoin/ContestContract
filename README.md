@@ -1,8 +1,12 @@
 # ContestContract
 Helps people contribute money to a project, and choose judges to distribute it for various solutions.
 
+# Installation
+### Node
+`npm install @openzeppelin/contracts-ethereum-package`
+
 # Deploy
-when deploy it is need to pass parameters in to constructor
+when deploy it is need to pass parameters in to init method
 Params:
 name  | type | description
 --|--|--
@@ -21,6 +25,73 @@ revokeFee|uint256|10e4|10% mul at 1e6. penalty for revoke tokens
 
 # Overview
 once installed will be use methods:
+
+<table>
+<thead>
+	<tr>
+		<th>method name</th>
+		<th>called by</th>
+        <th>contract</th>
+		<th>description</th>
+	</tr>
+</thead>
+<tbody>
+	<tr>
+		<td><a href="#iscontestonline">isContestOnline</a></td>
+		<td>anyone</td>
+        <td>boths</td>
+		<td>Checking online Contest</td>
+	</tr>
+	<tr>
+		<td><a href="#pledge">pledge</a></td>
+		<td>anyone</td>
+        <td>Constest.sol only</td>
+		<td>can be used to send external token into the contract, and issue internal token balance</td>
+	</tr>
+	<tr>
+		<td><a href="#pledgeeth">pledgeETH</a></td>
+		<td>anyone</td>
+        <td>ConstestETHOnly.sol only</td>
+		<td>can be used to send ETH into the contract, and issue internal token balance</td>
+	</tr>
+	<tr>
+		<td><a href="#delegate">delegate</a></td>
+		<td>anyone outside the contestant list</td>
+        <td>boths</td>
+		<td>user can delegate own vote</td>
+	</tr>
+	<tr>
+		<td><a href="#vote">vote</a></td>
+		<td>anyone on the judge list <br>(if judgelist empty anyone outside the contestant list)</td>
+        <td>boths</td>
+		<td>vote for contestant</td>
+	</tr>
+	<tr>
+		<td><a href="#claim">claim</a></td>
+		<td>anyone on the contestant list</td>
+        <td>boths</td>
+		<td>claim funds</td>
+	</tr>
+	<tr>
+		<td><a href="#enter">enter</a></td>
+		<td>anyone</td>
+        <td>boths</td>
+		<td>sender is become a contestant</td>
+	</tr>
+	<tr>
+		<td><a href="#leave">leave</a></td>
+		<td>anyone on the contestant list</td>
+        <td>boths</td>
+		<td>sender leave from contest</td>
+	</tr>
+	<tr>
+		<td><a href="#revoke">revoke</a></td>
+		<td>anyone outside the contestant list</td>
+        <td>boths</td>
+		<td>revoke own vote or delegation</td>
+	</tr>
+</tbody>
+</table>
 
 ## Methods
 

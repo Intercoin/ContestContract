@@ -1,10 +1,12 @@
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0 <0.7.0;
 
 import "./ContestBase.sol";
-import "./openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 
 contract Contest is ContestBase {
     address token;
+    
     /**
      * @param token_address token address
      * @param stagesCount count of stages for first Contest
@@ -16,7 +18,7 @@ contract Contest is ContestBase {
      * @param judges array of judges' addresses. if empty than everyone can vote
      * 
      */
-    constructor (
+    function init(
         address token_address,
         uint256 stagesCount,
         uint256[] memory stagesMinAmount,
@@ -26,18 +28,24 @@ contract Contest is ContestBase {
         uint256[] memory percentForWinners,
         address[] memory judges
     ) 
-        ContestBase(stagesCount, stagesMinAmount, contestPeriodInSeconds, votePeriodInSeconds, revokePeriodInSeconds, percentForWinners, judges
-    ) 
         public 
+        initializer 
     {
+        super.init(stagesCount, stagesMinAmount, contestPeriodInSeconds, votePeriodInSeconds, revokePeriodInSeconds, percentForWinners, judges);
         token = token_address;
     }
+        
     
     receive() external payable {
         require(true == false, "Method does not support.");
     }
     
-    // pledge(amount) can be used to send external token into the contract, and issue internal token balance
+    
+    /**
+     * pledge(amount) can be used to send external token into the contract, and issue internal token balance
+     * @param amount amount
+     * @param stageID Stage number
+     */
     function pledge(uint256 amount, uint256 stageID) public virtual override nonReentrant() {
         uint256 _allowedAmount = IERC20(token).allowance(_msgSender(), address(this));
         require(
@@ -54,12 +62,18 @@ contract Contest is ContestBase {
         _pledge(amount, stageID);
     }
     
-    
+    /**
+     * @param amount amount
+     */
     function revokeAfter(uint256 amount) internal virtual override nonReentrant() {
         // todo: 0 return back to user 
         bool success = IERC20(token).transfer(_msgSender(),amount);
         require(success == true, 'Transfer tokens were failed');    
     }
+    
+    /**
+     * @param amount amount
+     */
     function _claimAfter(uint256 amount) internal virtual override nonReentrant() {
         bool success = IERC20(token).transfer(_msgSender(),amount);
         require(success == true, 'Transfer tokens were failed');    

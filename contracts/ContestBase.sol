@@ -1,11 +1,12 @@
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0 <0.7.0;
 
-import "./openzeppelin-contracts/contracts/math/SafeMath.sol";
-import "./openzeppelin-contracts/contracts/utils/EnumerableSet.sol";
-import "./openzeppelin-contracts/contracts/access/Ownable.sol";
-import "./openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
 
-contract ContestBase is Ownable, ReentrancyGuard {
+contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgradeSafe {
     
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -86,6 +87,11 @@ contract ContestBase is Ownable, ReentrancyGuard {
 	////
 	// modifiers section
 	////
+	
+    /**
+     * @param account address
+     * @param stageID Stage number
+     */
     modifier onlyNotVotedNotDelegated(address account, uint256 stageID) {
          require(
              (_contest._stages[stageID].participants[account].voted == false) && 
@@ -94,6 +100,11 @@ contract ContestBase is Ownable, ReentrancyGuard {
         );
         _;
     }
+    
+    /**
+     * @param account address
+     * @param stageID Stage number
+     */
     modifier judgeNotDelegatedBefore(address account, uint256 stageID) {
          require(
              (_contest._stages[stageID].participants[account].delegated == false), 
@@ -101,6 +112,10 @@ contract ContestBase is Ownable, ReentrancyGuard {
         );
         _;
     }
+    
+    /**
+     * @param stageID Stage number
+     */
     modifier stageActive(uint256 stageID) {
         require(
             (_contest._stages[stageID].active == true), 
@@ -109,6 +124,9 @@ contract ContestBase is Ownable, ReentrancyGuard {
         _;
     }
     
+    /**
+     * @param stageID Stage number
+     */
     modifier stageNotCompleted(uint256 stageID) {
         require(
             (_contest._stages[stageID].completed == false), 
@@ -116,7 +134,10 @@ contract ContestBase is Ownable, ReentrancyGuard {
         );
         _;
     }
- 
+    
+    /**
+     * @param stageID Stage number
+     */
     modifier canPledge(uint256 stageID) {
         uint256 endContestTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod);
         require(
@@ -132,7 +153,10 @@ contract ContestBase is Ownable, ReentrancyGuard {
         );
         _;
     }
-
+    
+    /**
+     * @param stageID Stage number
+     */
     modifier canDelegateAndVote(uint256 stageID) {
         uint256 endContestTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod);
         uint256 endVoteTimestamp = endContestTimestamp.add(_contest._stages[stageID].votePeriod);
@@ -147,6 +171,9 @@ contract ContestBase is Ownable, ReentrancyGuard {
         _;
     }
     
+    /**
+     * @param stageID Stage number
+     */
     modifier canRevoke(uint256 stageID) {
         uint256 endVoteTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod).add(_contest._stages[stageID].votePeriod);
         uint256 endRevokeTimestamp = _contest._stages[stageID].endTimestampUtc;
@@ -162,6 +189,9 @@ contract ContestBase is Ownable, ReentrancyGuard {
         _;
     }
     
+    /**
+     * @param stageID Stage number
+     */
     modifier canClaim(uint256 stageID) {
         uint256 endTimestampUtc = _contest._stages[stageID].endTimestampUtc;
         require(
@@ -179,6 +209,9 @@ contract ContestBase is Ownable, ReentrancyGuard {
         _;
     }
     
+    /**
+     * @param stageID Stage number
+     */
     modifier inContestsList(uint256 stageID) {
         require(
              (_contest._stages[stageID].contestsList.contains(_msgSender())), 
@@ -187,6 +220,9 @@ contract ContestBase is Ownable, ReentrancyGuard {
         _;
     }
     
+    /**
+     * @param stageID Stage number
+     */
     modifier notInContestsList(uint256 stageID) {
         require(
              (!_contest._stages[stageID].contestsList.contains(_msgSender())), 
@@ -195,6 +231,9 @@ contract ContestBase is Ownable, ReentrancyGuard {
         _;
     }
     
+    /**
+     * @param stageID Stage number
+     */
     modifier inPledgesList(uint256 stageID) {
         require(
              (_contest._stages[stageID].pledgesList.contains(_msgSender())), 
@@ -202,6 +241,10 @@ contract ContestBase is Ownable, ReentrancyGuard {
         );
         _;
     }
+    
+    /**
+     * @param stageID Stage number
+     */
     modifier notInPledgesList(uint256 stageID) {
         require(
              (!_contest._stages[stageID].pledgesList.contains(_msgSender())), 
@@ -210,6 +253,9 @@ contract ContestBase is Ownable, ReentrancyGuard {
         _;
     }
     
+    /**
+     * @param stageID Stage number
+     */
     modifier inJudgesList(uint256 stageID) {
         require(
              (_contest._stages[stageID].judgesList.contains(_msgSender())), 
@@ -217,6 +263,10 @@ contract ContestBase is Ownable, ReentrancyGuard {
         );
         _;
     }
+    
+    /**
+     * @param stageID Stage number
+     */
     modifier notInJudgesList(uint256 stageID) {
         require(
              (!_contest._stages[stageID].judgesList.contains(_msgSender())), 
@@ -224,7 +274,10 @@ contract ContestBase is Ownable, ReentrancyGuard {
         );
         _;
     }
-        
+    
+    /**
+     * @param stageID Stage number
+     */        
     modifier inPledgesOrJudgesList(uint256 stageID) {
         require(
              (
@@ -237,6 +290,9 @@ contract ContestBase is Ownable, ReentrancyGuard {
         _;
     }  
     
+    /**
+     * @param stageID Stage number
+     */
     modifier canCompleted(uint256 stageID) {
          require(
             (
@@ -251,7 +307,9 @@ contract ContestBase is Ownable, ReentrancyGuard {
     ////
 	// END of modifiers section 
 	////
-
+        
+    //constructor() public {}
+    
 	/**
      * @param stagesCount count of stages for first Contest
      * @param stagesMinAmount array of minimum amount that need to reach at each stage
@@ -262,7 +320,7 @@ contract ContestBase is Ownable, ReentrancyGuard {
      * @param judges array of judges' addresses. if empty than everyone can vote
      * 
      */
-    constructor (
+    function init(
         uint256 stagesCount,
         uint256[] memory stagesMinAmount,
         uint256 contestPeriodInSeconds,
@@ -272,7 +330,10 @@ contract ContestBase is Ownable, ReentrancyGuard {
         address[] memory judges
     ) 
         public 
+        initializer 
     {
+        __Ownable_init();
+        __ReentrancyGuard_init();
         
         uint256 stage = 0;
         

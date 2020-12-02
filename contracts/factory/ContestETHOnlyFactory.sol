@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0 <0.7.0;
-import "../openzeppelin-contracts/contracts/access/Ownable.sol";
+
 import "../ContestETHOnly.sol";
 
-contract ContestETHOnlyFactory is Ownable {
+contract ContestETHOnlyFactory {
     
     ContestETHOnly[] public contestETHOnlyAddresses;
 
@@ -29,10 +30,11 @@ contract ContestETHOnlyFactory is Ownable {
     ) 
         public
     {
-      ContestETHOnly contestETHOnly = new ContestETHOnly(stagesCount, stagesMinAmount, contestPeriodInSeconds, votePeriodInSeconds, revokePeriodInSeconds, percentForWinners, judges);
+        ContestETHOnly contestETHOnly = new ContestETHOnly();
+        contestETHOnly.init(stagesCount, stagesMinAmount, contestPeriodInSeconds, votePeriodInSeconds, revokePeriodInSeconds, percentForWinners, judges);
         contestETHOnlyAddresses.push(contestETHOnly);
         emit ContestETHOnlyCreated(contestETHOnly);
-        contestETHOnly.transferOwnership(_msgSender());  
+        contestETHOnly.transferOwnership(msg.sender);  
     }
     
 }
