@@ -167,6 +167,7 @@ stageID|uint256|Stage number
 * starting Voting period for `votePeriodInSeconds` seconds.
     * judge can vote for contestants
     * if judgeList was empty then anyone who pledged before can vote
+    * anyone who pledged before can revoke own tokens with gradually increased penalty from 0 to revokeFee
 * starting Revoking period for `revokePeriodInSeconds` seconds.
     * anyone who pledged before can revoke own tokens with revokeFee penalty
 * Stage completed.(after any request with `stageID`).

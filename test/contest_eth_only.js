@@ -1,4 +1,5 @@
 const BN = require('bn.js'); // https://github.com/indutny/bn.js
+const BigNumber = require('bignumber.js');
 const util = require('util');
 const ContestETHOnly = artifacts.require("ContestETHOnly");
 const ContestETHOnlyMock = artifacts.require("ContestETHOnlyMock");
@@ -357,6 +358,69 @@ contract('ContestETHOnly', (accounts) => {
         
     });  
   
+    it('should revoke on voting period with gradually increased revoke penalty', async () => {
+        let stageID = 0;
+        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
+        await ContestETHOnlyMockInstance.init(
+                                                                3, // stagesCount,
+                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                10, // contestPeriodInSeconds,
+                                                                10, // votePeriodInSeconds,
+                                                                10, // revokePeriodInSeconds,
+                                                                [50,30,10], //percentForWinners,
+                                                                [] // judges
+                                                                );
+        const revokeFee = (await ContestETHOnlyMockInstance.getRevokeFee({from: accountOne}));
+        const accountFourthStartingBalance = (await web3.eth.getBalance(accountFourth));
+        
+        
+        // make some pledge to reach minimum
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(3*oneEther).toString(16) });
+        let pledgeTxObj = await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
+        
+        // pass time.   to voting period
+        // 5 seconds since start voting period. and 1 second for block "advanceTimeAndBlock"
+        await helper.advanceTimeAndBlock(15);
+        let revokeFeeperSecond = BigNumber(revokeFee).div(BigNumber(10)); // 10 seconds is voting period
+
+        // make revoke 
+        let revokeTxObj = await ContestETHOnlyMockInstance.revoke(stageID, { from: accountFourth});
+        
+        const accountFourthEndingBalance = (await web3.eth.getBalance(accountFourth));
+
+        assert.notEqual(new BN(accountFourthStartingBalance,16).toString(16), new BN(accountFourthEndingBalance,16).toString(16), "Balance after revoke is equal" );
+        
+        let pledgeTx = await web3.eth.getTransaction(pledgeTxObj.tx);
+        let revokeTx = await web3.eth.getTransaction(revokeTxObj.tx);
+
+        let actual = (new BN(accountFourthEndingBalance,10)).toString(16);
+        let expected = (
+            // starting balance
+            BigNumber(accountFourthStartingBalance)
+            // revoke fee 
+            .minus(
+                BigNumber(1*oneEther).times(
+                    BigNumber(revokeFeeperSecond).times(BigNumber(5+1)).div(BigNumber(1000000))
+                )
+            )
+            // consuming for pledge transaction 
+            .minus(
+                BigNumber(pledgeTxObj["receipt"].gasUsed).times(BigNumber(pledgeTx.gasPrice))
+                )
+            // consuming for revoke transaction 
+            .minus(
+                BigNumber(revokeTxObj["receipt"].gasUsed).times(BigNumber(revokeTx.gasPrice))
+                )
+            ).toString(16);
+
+        assert.equal(
+            actual, 
+            expected, 
+            "Wrong revokeFee consuming"
+        );
+        
+    });  
+    
     it('Stage Workflow: should get correct prizes for winners&losers', async () => {
         let stageID = 0;
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();

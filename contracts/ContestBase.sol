@@ -6,7 +6,9 @@ import "@openzeppelin/contracts-ethereum-package/contracts/utils/EnumerableSet.s
 import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
 
-contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgradeSafe {
+import './IntercoinStorage.sol';
+
+contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgradeSafe, IntercoinStorage {
     
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -175,16 +177,17 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
      * @param stageID Stage number
      */
     modifier canRevoke(uint256 stageID) {
+        uint256 endContestTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod);
         uint256 endVoteTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod).add(_contest._stages[stageID].votePeriod);
         uint256 endRevokeTimestamp = _contest._stages[stageID].endTimestampUtc;
         
         require(
             (
                 (
-                    (_contest._stages[stageID].active == true) && (endRevokeTimestamp > now) && (now >= endVoteTimestamp)
+                    (_contest._stages[stageID].active == true) && (endRevokeTimestamp > now) && (now >= endContestTimestamp)
                 )
             ), 
-            "Stage is out of revoke period"
+            "Stage is out of revoke or vote period"
         );
         _;
     }
@@ -334,7 +337,8 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
     {
         __Ownable_init();
         __ReentrancyGuard_init();
-        
+        __IntercoinStorage_init();
+
         uint256 stage = 0;
         
         _contest.stage = 0;            
@@ -483,13 +487,37 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
             
         uint revokedBalance = _contest._stages[stageID].participants[_msgSender()].balance;
         _contest._stages[stageID].amount = _contest._stages[stageID].amount.sub(revokedBalance);
-        
-        revokeAfter(revokedBalance.sub(revokedBalance.mul(revokeFee).div(1e6)));
+        revokeAfter(revokedBalance.sub(revokedBalance.mul(_calculateRevokeFee(stageID)).div(1e6)));
     } 
-    
+
     ////
 	// internal section
 	////
+	
+	/**
+	 * calculation revokeFee penalty.  it gradually increased if revoke happens in voting period
+	 * @param stageID Stage number
+	 */
+	function _calculateRevokeFee(
+	    uint256 stageID
+    )
+        internal 
+        view
+        returns(uint256)
+    {
+        uint256 endContestTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod);
+        uint256 endVoteTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod).add(_contest._stages[stageID].votePeriod);
+        
+        if ((endVoteTimestamp > now) && (now >= endContestTimestamp)) {
+            uint256 revokeFeePerSecond = (revokeFee).div(endVoteTimestamp.sub(endContestTimestamp));
+            return revokeFeePerSecond.mul(now.sub(endContestTimestamp));
+            
+        } else {
+            return revokeFee;
+        }
+        
+    }
+	
 	/**
      * @param judge address of judge which user want to delegate own vote
      * @param stageID Stage number
