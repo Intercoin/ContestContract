@@ -5,10 +5,9 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
+import "./IntercoinTrait.sol";
 
-import './IntercoinStorage.sol';
-
-contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgradeSafe, IntercoinStorage {
+contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgradeSafe, IntercoinTrait {
     
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -19,7 +18,7 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
     // uint256 delegateFee = 5e4; // 5% mul at 1e6
     
     // penalty for revoke tokens
-    uint256 revokeFee = 10e4; // 10% mul at 1e6
+    uint256 revokeFee; // 10% mul at 1e6
     
     EnumerableSet.AddressSet private _judgesWhitelist;
     EnumerableSet.AddressSet private _personsList;
@@ -337,8 +336,10 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
     {
         __Ownable_init();
         __ReentrancyGuard_init();
-        __IntercoinStorage_init();
-
+        __IntercoinTrait_init();
+    
+        revokeFee = 10e4;
+        
         uint256 stage = 0;
         
         _contest.stage = 0;            
@@ -360,6 +361,7 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
         }
         
         emit ContestStart();
+        
         
     }
 
@@ -895,7 +897,7 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
        return data;
     }
     
-    function quickSortAsc(uint[] memory arr, int left, int right) private{
+    function quickSortAsc(uint[] memory arr, int left, int right) private {
         int i = left;
         int j = right;
         if(i==j) return;
