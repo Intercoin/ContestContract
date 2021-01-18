@@ -336,7 +336,6 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
     {
         __Ownable_init();
         __ReentrancyGuard_init();
-        __IntercoinTrait_init();
     
         revokeFee = 10e4;
         
