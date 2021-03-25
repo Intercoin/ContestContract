@@ -1,10 +1,6 @@
 # ContestContract
 Helps people contribute money to a project, and choose judges to distribute it for various solutions.
 
-# Installation
-### Node
-`npm install @openzeppelin/contracts-ethereum-package`
-
 # Deploy
 when deploy it is need to pass parameters in to init method
 Params:

@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.0 <0.7.0;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/utils/EnumerableSet.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./IntercoinTrait.sol";
 
-contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgradeSafe, IntercoinTrait {
+contract ContestBase is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, IntercoinTrait {
     
-    using EnumerableSet for EnumerableSet.AddressSet;
-    using EnumerableSet for EnumerableSet.UintSet;
-    using SafeMath for uint256;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
+    using SafeMathUpgradeable for uint256;
 
     // ** deprecated 
     // delegateFee (some constant in contract) which is percent of amount. They can delegate their entire amount of vote to the judge, or some.
@@ -20,8 +20,8 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
     // penalty for revoke tokens
     uint256 revokeFee; // 10% mul at 1e6
     
-    EnumerableSet.AddressSet private _judgesWhitelist;
-    EnumerableSet.AddressSet private _personsList;
+    EnumerableSetUpgradeable.AddressSet private _judgesWhitelist;
+    EnumerableSetUpgradeable.AddressSet private _personsList;
     
     mapping (address => uint256) private _balances;
     
@@ -50,10 +50,10 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
         uint256 votePeriod; // in seconds
         uint256 revokePeriod; // in seconds
         uint256 endTimestampUtc;
-        EnumerableSet.AddressSet contestsList;
-        EnumerableSet.AddressSet pledgesList;
-        EnumerableSet.AddressSet judgesList;
-        EnumerableSet.UintSet percentForWinners;
+        EnumerableSetUpgradeable.AddressSet contestsList;
+        EnumerableSetUpgradeable.AddressSet pledgesList;
+        EnumerableSetUpgradeable.AddressSet judgesList;
+        EnumerableSetUpgradeable.UintSet percentForWinners;
         mapping (address => Participant) participants;
     }
    
@@ -68,8 +68,8 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
         address voteTo; // person voted to
         bool delegated;  // if true, that person delegated to some1
         address delegateTo; // person delegated to
-        EnumerableSet.AddressSet delegatedBy; // participant who delegated own weight
-        EnumerableSet.AddressSet votedBy; // participant who delegated own weight
+        EnumerableSetUpgradeable.AddressSet delegatedBy; // participant who delegated own weight
+        EnumerableSetUpgradeable.AddressSet votedBy; // participant who delegated own weight
         bool won;  // if true, that person won round. setup after EndOfStage
         bool claimed; // if true, that person claimed them prise if won ofc
         bool revoked; // if true, that person revoked from current stage
@@ -147,7 +147,7 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
                     _contest._stages[stageID].active == false
                 ) || 
                 (
-                    (_contest._stages[stageID].active == true) && (endContestTimestamp > now)
+                    (_contest._stages[stageID].active == true) && (endContestTimestamp > block.timestamp)
                 )
             ), 
             "Stage is out of contest period"
@@ -164,8 +164,8 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
         require(
             (
                 (_contest._stages[stageID].active == true) && 
-                (endVoteTimestamp > now) && 
-                (now >= endContestTimestamp)
+                (endVoteTimestamp > block.timestamp) && 
+                (block.timestamp >= endContestTimestamp)
             ), 
             "Stage is out of voting period"
         );
@@ -183,7 +183,7 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
         require(
             (
                 (
-                    (_contest._stages[stageID].active == true) && (endRevokeTimestamp > now) && (now >= endContestTimestamp)
+                    (_contest._stages[stageID].active == true) && (endRevokeTimestamp > block.timestamp) && (block.timestamp >= endContestTimestamp)
                 )
             ), 
             "Stage is out of revoke or vote period"
@@ -203,7 +203,7 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
                     (_contest._stages[stageID].participants[_msgSender()].claimed == false) && 
                     (_contest._stages[stageID].completed == true) && 
                     (_contest._stages[stageID].active == true) && 
-                    (now > endTimestampUtc)
+                    (block.timestamp > endTimestampUtc)
                 )
             ), 
             "Stage have not completed or sender has already claimed or revoked"
@@ -300,7 +300,7 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
             (
                 (_contest._stages[stageID].completed == false) &&
                 (_contest._stages[stageID].active == true) &&
-                (_contest._stages[stageID].endTimestampUtc < now)
+                (_contest._stages[stageID].endTimestampUtc < block.timestamp)
             ), 
             string("Last stage have not ended yet")
         );
@@ -322,7 +322,7 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
      * @param judges array of judges' addresses. if empty than everyone can vote
      * 
      */
-    function init(
+    function __ContestBase__init(
         uint256 stagesCount,
         uint256[] memory stagesMinAmount,
         uint256 contestPeriodInSeconds,
@@ -331,7 +331,7 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
         uint256[] memory percentForWinners,
         address[] memory judges
     ) 
-        public 
+        internal 
         initializer 
     {
         __Ownable_init();
@@ -377,7 +377,7 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
             (_contest._stages[stageID].winnersLock == false) &&
             (
                 (_contest._stages[stageID].active == false) ||
-                ((_contest._stages[stageID].active == true) && (_contest._stages[stageID].endTimestampUtc > now))
+                ((_contest._stages[stageID].active == true) && (_contest._stages[stageID].endTimestampUtc > block.timestamp))
             ) && 
             (_contest._stages[stageID].completed == false)
         ) {
@@ -509,9 +509,9 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
         uint256 endContestTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod);
         uint256 endVoteTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod).add(_contest._stages[stageID].votePeriod);
         
-        if ((endVoteTimestamp > now) && (now >= endContestTimestamp)) {
+        if ((endVoteTimestamp > block.timestamp) && (block.timestamp >= endContestTimestamp)) {
             uint256 revokeFeePerSecond = (revokeFee).div(endVoteTimestamp.sub(endContestTimestamp));
-            return revokeFeePerSecond.mul(now.sub(endContestTimestamp));
+            return revokeFeePerSecond.mul(block.timestamp.sub(endContestTimestamp));
             
         } else {
             return revokeFee;
@@ -618,15 +618,15 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
         ) {
             _contest._stages[stageID].active = true;
             // fill time
-            _contest._stages[stageID].startTimestampUtc = now;
-            _contest._stages[stageID].endTimestampUtc = (now)
+            _contest._stages[stageID].startTimestampUtc = block.timestamp;
+            _contest._stages[stageID].endTimestampUtc = (block.timestamp)
                 .add(_contest._stages[stageID].contestPeriod)
                 .add(_contest._stages[stageID].votePeriod)
                 .add(_contest._stages[stageID].revokePeriod);
             emit StageStartAnnounced(stageID);
         } else if (
             (_contest._stages[stageID].active == true) && 
-            (_contest._stages[stageID].endTimestampUtc < now)
+            (_contest._stages[stageID].endTimestampUtc < block.timestamp)
         ) {
             // run complete
 	        _complete(stageID);
@@ -727,8 +727,8 @@ contract ContestBase is Initializable, OwnableUpgradeSafe, ReentrancyGuardUpgrad
         if (_contest._stages[stageID].participants[_msgSender()].active) {
              // ---
         } else {
-            Participant memory p;
-            _contest._stages[stageID].participants[_msgSender()] = p;
+            //Participant memory p;
+            //_contest._stages[stageID].participants[_msgSender()] = p;
             _contest._stages[stageID].participants[_msgSender()].active = true;
         }
     }

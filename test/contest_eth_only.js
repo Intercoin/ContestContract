@@ -36,13 +36,13 @@ contract('ContestETHOnly', (accounts) => {
     const oneEther = 1000000000000000000; // 1eth
     
     var ContestETHOnlyMockInstance;
-    
+
     it('should disable recieve() method', async () => {
         let stageID = 0;
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                         3, // stagesCount,
-                                        ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                        ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                         100, // contestPeriodInSeconds,
                                         100, // votePeriodInSeconds,
                                         100, // revokePeriodInSeconds,
@@ -69,7 +69,7 @@ contract('ContestETHOnly', (accounts) => {
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInSeconds,
                                                                 100, // votePeriodInSeconds,
                                                                 100, // revokePeriodInSeconds,
@@ -92,7 +92,7 @@ contract('ContestETHOnly', (accounts) => {
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInSeconds,
                                                                 100, // votePeriodInSeconds,
                                                                 100, // revokePeriodInSeconds,
@@ -118,7 +118,7 @@ contract('ContestETHOnly', (accounts) => {
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInSeconds,
                                                                 100, // votePeriodInSeconds,
                                                                 100, // revokePeriodInSeconds,
@@ -130,7 +130,7 @@ contract('ContestETHOnly', (accounts) => {
         
         // revert if trying to double enter
         await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(oneEther).toString(16) }),
+            ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) }),
             "Sender must not be in contestant list"
         );
 
@@ -141,7 +141,7 @@ contract('ContestETHOnly', (accounts) => {
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 100, // contestPeriodInSeconds,
                                                                 100, // votePeriodInSeconds,
                                                                 100, // revokePeriodInSeconds,
@@ -149,7 +149,7 @@ contract('ContestETHOnly', (accounts) => {
                                                                 [] // judges
                                                                 );
         
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) });
         
         
         await ContestETHOnlyMockInstance.enter(stageID, { from: accountTwo });
@@ -163,7 +163,7 @@ contract('ContestETHOnly', (accounts) => {
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -172,16 +172,16 @@ contract('ContestETHOnly', (accounts) => {
                                                                 );
 																
         // make some pledge to reach minimum                                                                
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) });
 
         // pass time.   to voting period
 		await helper.advanceTime(10);
         
         // try to pledge again
         await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(oneEther).toString(16) }),
+            ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) }),
             "Stage is out of contest period"
         );
         
@@ -190,7 +190,7 @@ contract('ContestETHOnly', (accounts) => {
         
         // try to pledge again
         await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(oneEther).toString(16) }),
+            ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) }),
             "Stage is out of contest period"
         );
         
@@ -201,7 +201,7 @@ contract('ContestETHOnly', (accounts) => {
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -210,7 +210,7 @@ contract('ContestETHOnly', (accounts) => {
                                                                 );
         
         // make some pledge to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(3*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(3*oneEther).toString(16) });
         
         // pass time.   to voting period
         await helper.advanceTime(10);
@@ -229,7 +229,7 @@ contract('ContestETHOnly', (accounts) => {
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -238,8 +238,8 @@ contract('ContestETHOnly', (accounts) => {
                                                                 );
         
         // make some pledge to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(3*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(3*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
         
         await truffleAssert.reverts(
             ContestETHOnlyMockInstance.vote(accountTwo, stageID, { from: accountOne}),
@@ -274,7 +274,7 @@ contract('ContestETHOnly', (accounts) => {
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -283,8 +283,8 @@ contract('ContestETHOnly', (accounts) => {
                                                                 );
         
         // make some pledge to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(3*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(3*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
         
         // pass time.   to voting period
         await helper.advanceTime(10);
@@ -301,7 +301,7 @@ contract('ContestETHOnly', (accounts) => {
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -313,8 +313,8 @@ contract('ContestETHOnly', (accounts) => {
         
         
         // make some pledge to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(3*oneEther).toString(16) });
-        let pledgeTxObj = await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(3*oneEther).toString(16) });
+        let pledgeTxObj = await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
         
         // pass time.   to revoking period
         await helper.advanceTime(20);
@@ -324,29 +324,29 @@ contract('ContestETHOnly', (accounts) => {
         
         const accountFourthEndingBalance = (await web3.eth.getBalance(accountFourth));
 
-        assert.notEqual(new BN(accountFourthStartingBalance,16).toString(16), new BN(accountFourthEndingBalance,16).toString(16), "Balance after revoke is equal" );
+        assert.notEqual(BigNumber(accountFourthStartingBalance).toString(16), BigNumber(accountFourthEndingBalance).toString(16), "Balance after revoke is equal" );
         
         
         let pledgeTx = await web3.eth.getTransaction(pledgeTxObj.tx);
         let revokeTx = await web3.eth.getTransaction(revokeTxObj.tx);
 
-        let actual = (new BN(accountFourthEndingBalance,10)).toString(16);
+        let actual = (BigNumber(accountFourthEndingBalance)).toString(16);
         let expected = (
             // starting balance
             (
-                new BN(accountFourthStartingBalance,10)
+                BigNumber(accountFourthStartingBalance)
             )
             // revoke fee 
-            .sub(
-                (new BN((1*oneEther).toString(16),16)).mul(new BN(revokeFee,10)).div(new BN(1e6,10))
+            .minus(
+                BigNumber(1*oneEther).times(BigNumber(revokeFee)).div(BigNumber(1e6))
             )
             // consuming for pledge transaction 
-            .sub(
-                (new BN(pledgeTxObj["receipt"].gasUsed,10)).mul(new BN(pledgeTx.gasPrice,10))
+            .minus(
+                BigNumber(pledgeTxObj["receipt"].gasUsed).times(BigNumber(pledgeTx.gasPrice))
                 )
             // consuming for revoke transaction 
-            .sub(
-                (new BN(revokeTxObj["receipt"].gasUsed,10)).mul(new BN(revokeTx.gasPrice,10))
+            .minus(
+                BigNumber(revokeTxObj["receipt"].gasUsed).times(BigNumber(revokeTx.gasPrice))
                 )
             ).toString(16);
 
@@ -357,13 +357,13 @@ contract('ContestETHOnly', (accounts) => {
         );
         
     });  
-  
+
     it('should revoke on voting period with gradually increased revoke penalty', async () => {
         let stageID = 0;
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -375,8 +375,8 @@ contract('ContestETHOnly', (accounts) => {
         
         
         // make some pledge to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(3*oneEther).toString(16) });
-        let pledgeTxObj = await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(3*oneEther).toString(16) });
+        let pledgeTxObj = await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
         
         // pass time.   to voting period
         // 5 seconds since start voting period. and 1 second for block "advanceTimeAndBlock"
@@ -388,7 +388,7 @@ contract('ContestETHOnly', (accounts) => {
         
         const accountFourthEndingBalance = (await web3.eth.getBalance(accountFourth));
 
-        assert.notEqual(new BN(accountFourthStartingBalance,16).toString(16), new BN(accountFourthEndingBalance,16).toString(16), "Balance after revoke is equal" );
+        assert.notEqual(BigNumber(accountFourthStartingBalance).toString(16), BigNumber(accountFourthEndingBalance).toString(16), "Balance after revoke is equal" );
         
         let pledgeTx = await web3.eth.getTransaction(pledgeTxObj.tx);
         let revokeTx = await web3.eth.getTransaction(revokeTxObj.tx);
@@ -426,7 +426,7 @@ contract('ContestETHOnly', (accounts) => {
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -446,16 +446,16 @@ contract('ContestETHOnly', (accounts) => {
         
         
         // make some pledge 11ETH to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(3*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+(3*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+BigNumber(3*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+BigNumber(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+BigNumber(1*oneEther).toString(16) });
         
         const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
         assert.equal(
-            new BN((11*oneEther).toString(16),16).toString(16),
-            new BN((stageAmount).toString(16),16).toString(16),
+            BigNumber(11*oneEther).toString(16),
+            BigNumber(stageAmount).toString(16),
             "Wrong Stage amount"
         );
         // pass time.   to voting period
@@ -507,58 +507,58 @@ contract('ContestETHOnly', (accounts) => {
         
         assert.equal(
             (
-            new BN((11*oneEther).toString(16),16).mul(new BN(50,10)).div(new BN(100,10))
+                BigNumber(11*oneEther).times(BigNumber(50)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountFiveEndingBalance,10)).sub(new BN(accountFiveStartingBalance,10)).add((new BN(claim5TxObj["receipt"].gasUsed,10)).mul(new BN(claim5Tx.gasPrice,10)))
+                BigNumber(accountFiveEndingBalance).minus(BigNumber(accountFiveStartingBalance)).plus((BigNumber(claim5TxObj["receipt"].gasUsed)).times(BigNumber(claim5Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for winners(1st place)"
         );
         assert.equal(
             (
-            new BN((11*oneEther).toString(16),16).mul(new BN(30,10)).div(new BN(100,10))
+                BigNumber(11*oneEther).times(BigNumber(30)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountSixEndingBalance,10)).sub(new BN(accountSixStartingBalance,10)).add((new BN(claim6TxObj["receipt"].gasUsed,10)).mul(new BN(claim6Tx.gasPrice,10)))
+                BigNumber(accountSixEndingBalance).minus(BigNumber(accountSixStartingBalance)).plus((BigNumber(claim6TxObj["receipt"].gasUsed)).times(BigNumber(claim6Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for winners(2nd place)"
         );
         assert.equal(
             (
-            new BN((11*oneEther).toString(16),16).mul(new BN(10,10)).div(new BN(100,10))
+                BigNumber(11*oneEther).times(BigNumber(10)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountSevenEndingBalance,10)).sub(new BN(accountSevenStartingBalance,10)).add((new BN(claim7TxObj["receipt"].gasUsed,10)).mul(new BN(claim7Tx.gasPrice,10)))
+                BigNumber(accountSevenEndingBalance).minus(BigNumber(accountSevenStartingBalance)).plus((BigNumber(claim7TxObj["receipt"].gasUsed)).times(BigNumber(claim7Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for winners(3rd place)"
         );
         assert.equal(
             (
-            new BN((11*oneEther).toString(16),16).mul(new BN(5,10)).div(new BN(100,10))
+                BigNumber(11*oneEther).times(BigNumber(5)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountEightEndingBalance,10)).sub(new BN(accountEightStartingBalance,10)).add((new BN(claim8TxObj["receipt"].gasUsed,10)).mul(new BN(claim8Tx.gasPrice,10)))
+                BigNumber(accountEightEndingBalance).minus(BigNumber(accountEightStartingBalance)).plus((BigNumber(claim8TxObj["receipt"].gasUsed)).times(BigNumber(claim8Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         assert.equal(
             (
-            new BN((11*oneEther).toString(16),16).mul(new BN(5,10)).div(new BN(100,10))
+                BigNumber(11*oneEther).times(BigNumber(5)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountNineEndingBalance,10)).sub(new BN(accountNineStartingBalance,10)).add((new BN(claim9TxObj["receipt"].gasUsed,10)).mul(new BN(claim9Tx.gasPrice,10)))
+                BigNumber(accountNineEndingBalance).minus(BigNumber(accountNineStartingBalance)).plus((BigNumber(claim9TxObj["receipt"].gasUsed)).times(BigNumber(claim9Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         
     });
-    
+
     it('Stage Workflow: winners\'s same weights(order by entering)', async () => {
         let stageID = 0;
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -579,16 +579,16 @@ contract('ContestETHOnly', (accounts) => {
         
         
         // make some pledge 17ETH to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+BigNumber(1*oneEther).toString(16) });
         
         const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
         assert.equal(
-            new BN((17*oneEther).toString(16),16).toString(16),
-            new BN((stageAmount).toString(16),16).toString(16),
+            BigNumber(17*oneEther).toString(16),
+            BigNumber(stageAmount).toString(16),
             "Wrong Stage amount"
         );
         // pass 10 time.   to voting period
@@ -640,58 +640,58 @@ contract('ContestETHOnly', (accounts) => {
         
         assert.equal(
             (
-            new BN((17*oneEther).toString(16),16).mul(new BN(50,10)).div(new BN(100,10))
+                BigNumber(17*oneEther).times(BigNumber(50)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountFiveEndingBalance,10)).sub(new BN(accountFiveStartingBalance,10)).add((new BN(claim5TxObj["receipt"].gasUsed,10)).mul(new BN(claim5Tx.gasPrice,10)))
+                BigNumber(accountFiveEndingBalance).minus(BigNumber(accountFiveStartingBalance)).plus((BigNumber(claim5TxObj["receipt"].gasUsed)).times(BigNumber(claim5Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for winners(1st place)"
         );
         assert.equal(
             (
-            new BN((17*oneEther).toString(16),16).mul(new BN(30,10)).div(new BN(100,10))
+                BigNumber(17*oneEther).times(BigNumber(30)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountSixEndingBalance,10)).sub(new BN(accountSixStartingBalance,10)).add((new BN(claim6TxObj["receipt"].gasUsed,10)).mul(new BN(claim6Tx.gasPrice,10)))
+                BigNumber(accountSixEndingBalance).minus(BigNumber(accountSixStartingBalance)).plus((BigNumber(claim6TxObj["receipt"].gasUsed)).times(BigNumber(claim6Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for winners(2nd place)"
         );
         assert.equal(
             (
-            new BN((17*oneEther).toString(16),16).mul(new BN(10,10)).div(new BN(100,10))
+                BigNumber(17*oneEther).times(BigNumber(10)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountSevenEndingBalance,10)).sub(new BN(accountSevenStartingBalance,10)).add((new BN(claim7TxObj["receipt"].gasUsed,10)).mul(new BN(claim7Tx.gasPrice,10)))
+                BigNumber(accountSevenEndingBalance).minus(BigNumber(accountSevenStartingBalance)).plus((BigNumber(claim7TxObj["receipt"].gasUsed)).times(BigNumber(claim7Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for winners(3rd place)"
         );
         assert.equal(
             (
-            new BN((17*oneEther).toString(16),16).mul(new BN(5,10)).div(new BN(100,10))
+                BigNumber(17*oneEther).times(BigNumber(5)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountEightEndingBalance,10)).sub(new BN(accountEightStartingBalance,10)).add((new BN(claim8TxObj["receipt"].gasUsed,10)).mul(new BN(claim8Tx.gasPrice,10)))
+                BigNumber(accountEightEndingBalance).minus(BigNumber(accountEightStartingBalance)).plus((BigNumber(claim8TxObj["receipt"].gasUsed)).times(BigNumber(claim8Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         assert.equal(
             (
-            new BN((17*oneEther).toString(16),16).mul(new BN(5,10)).div(new BN(100,10))
+                BigNumber(17*oneEther).times(BigNumber(5)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountNineEndingBalance,10)).sub(new BN(accountNineStartingBalance,10)).add((new BN(claim9TxObj["receipt"].gasUsed,10)).mul(new BN(claim9Tx.gasPrice,10)))
+                BigNumber(accountNineEndingBalance).minus(BigNumber(accountNineStartingBalance)).plus((BigNumber(claim9TxObj["receipt"].gasUsed)).times(BigNumber(claim9Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         
     });
-  
+    
     it('Stage Workflow: the one winner with 3 contest\'s prizes', async () => {
         let stageID = 0;
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -711,16 +711,16 @@ contract('ContestETHOnly', (accounts) => {
         
         
         // make some pledge 17ETH to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+BigNumber(1*oneEther).toString(16) });
         
         const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
         assert.equal(
-            new BN((17*oneEther).toString(16),16).toString(16),
-            new BN((stageAmount).toString(16),16).toString(16),
+            BigNumber(17*oneEther).toString(16),
+            BigNumber(stageAmount).toString(16),
             "Wrong Stage amount"
         );
         // pass time.   to voting period
@@ -769,46 +769,46 @@ contract('ContestETHOnly', (accounts) => {
         assert.equal(
             (17*oneEther*50/100).toString(16), 
             (
-                (new BN(accountFiveEndingBalance,10)).sub(new BN(accountFiveStartingBalance,10)).add((new BN(claim5TxObj["receipt"].gasUsed,10)).mul(new BN(claim5Tx.gasPrice,10)))
+                BigNumber(accountFiveEndingBalance).minus(BigNumber(accountFiveStartingBalance)).plus((BigNumber(claim5TxObj["receipt"].gasUsed)).times(BigNumber(claim5Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for winners(1st place)"
         );
         assert.equal(
             (17*oneEther*12.5/100).toString(16), 
             (
-                (new BN(accountSixEndingBalance,10)).sub(new BN(accountSixStartingBalance,10)).add((new BN(claim6TxObj["receipt"].gasUsed,10)).mul(new BN(claim6Tx.gasPrice,10)))
+                BigNumber(accountSixEndingBalance).minus(BigNumber(accountSixStartingBalance)).plus((BigNumber(claim6TxObj["receipt"].gasUsed)).times(BigNumber(claim6Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         assert.equal(
             (17*oneEther*12.5/100).toString(16), 
             (
-                (new BN(accountSevenEndingBalance,10)).sub(new BN(accountSevenStartingBalance,10)).add((new BN(claim7TxObj["receipt"].gasUsed,10)).mul(new BN(claim7Tx.gasPrice,10)))
+                BigNumber(accountSevenEndingBalance).minus(BigNumber(accountSevenStartingBalance)).plus((BigNumber(claim7TxObj["receipt"].gasUsed)).times(BigNumber(claim7Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         assert.equal(
             (17*oneEther*12.5/100).toString(16), 
             (
-                (new BN(accountEightEndingBalance,10)).sub(new BN(accountEightStartingBalance,10)).add((new BN(claim8TxObj["receipt"].gasUsed,10)).mul(new BN(claim8Tx.gasPrice,10)))
+                BigNumber(accountEightEndingBalance).minus(BigNumber(accountEightStartingBalance)).plus((BigNumber(claim8TxObj["receipt"].gasUsed)).times(BigNumber(claim8Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         assert.equal(
             (17*oneEther*12.5/100).toString(16), 
             (
-                (new BN(accountNineEndingBalance,10)).sub(new BN(accountNineStartingBalance,10)).add((new BN(claim9TxObj["receipt"].gasUsed,10)).mul(new BN(claim9Tx.gasPrice,10)))
+                BigNumber(accountNineEndingBalance).minus(BigNumber(accountNineStartingBalance)).plus((BigNumber(claim9TxObj["receipt"].gasUsed)).times(BigNumber(claim9Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
     });
-    
+
     it('Stage Workflow: there are no winners', async () => {
         let stageID = 0;
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -829,16 +829,16 @@ contract('ContestETHOnly', (accounts) => {
         
         
         // make some pledge 17ETH to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+BigNumber(1*oneEther).toString(16) });
         
         const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
         assert.equal(
-            new BN((17*oneEther).toString(16),16).toString(16),
-            new BN((stageAmount).toString(16),16).toString(16),
+            BigNumber(17*oneEther).toString(16),
+            BigNumber(stageAmount).toString(16),
             "Wrong Stage amount"
         );
         
@@ -883,47 +883,47 @@ contract('ContestETHOnly', (accounts) => {
         assert.equal(
             (17*oneEther*20/100).toString(16), 
             (
-                (new BN(accountFiveEndingBalance,10)).sub(new BN(accountFiveStartingBalance,10)).add((new BN(claim5TxObj["receipt"].gasUsed,10)).mul(new BN(claim5Tx.gasPrice,10)))
+                BigNumber(accountFiveEndingBalance).minus(BigNumber(accountFiveStartingBalance)).plus((BigNumber(claim5TxObj["receipt"].gasUsed)).times(BigNumber(claim5Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for winners(1st place)"
         );
         assert.equal(
             (17*oneEther*20/100).toString(16), 
             (
-                (new BN(accountSixEndingBalance,10)).sub(new BN(accountSixStartingBalance,10)).add((new BN(claim6TxObj["receipt"].gasUsed,10)).mul(new BN(claim6Tx.gasPrice,10)))
+                BigNumber(accountSixEndingBalance).minus(BigNumber(accountSixStartingBalance)).plus((BigNumber(claim6TxObj["receipt"].gasUsed)).times(BigNumber(claim6Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         assert.equal(
             (17*oneEther*20/100).toString(16), 
             (
-                (new BN(accountSevenEndingBalance,10)).sub(new BN(accountSevenStartingBalance,10)).add((new BN(claim7TxObj["receipt"].gasUsed,10)).mul(new BN(claim7Tx.gasPrice,10)))
+                BigNumber(accountSevenEndingBalance).minus(BigNumber(accountSevenStartingBalance)).plus((BigNumber(claim7TxObj["receipt"].gasUsed)).times(BigNumber(claim7Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         assert.equal(
             (17*oneEther*20/100).toString(16), 
             (
-                (new BN(accountEightEndingBalance,10)).sub(new BN(accountEightStartingBalance,10)).add((new BN(claim8TxObj["receipt"].gasUsed,10)).mul(new BN(claim8Tx.gasPrice,10)))
+                BigNumber(accountEightEndingBalance).minus(BigNumber(accountEightStartingBalance)).plus((BigNumber(claim8TxObj["receipt"].gasUsed)).times(BigNumber(claim8Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         assert.equal(
             (17*oneEther*20/100).toString(16), 
             (
-                (new BN(accountNineEndingBalance,10)).sub(new BN(accountNineStartingBalance,10)).add((new BN(claim9TxObj["receipt"].gasUsed,10)).mul(new BN(claim9Tx.gasPrice,10)))
+                BigNumber(accountNineEndingBalance).minus(BigNumber(accountNineStartingBalance)).plus((BigNumber(claim9TxObj["receipt"].gasUsed)).times(BigNumber(claim9Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         
     });
-    
+  
     it('Stage Workflow: there are no entered', async () => {
         let stageID = 0;
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -945,8 +945,8 @@ contract('ContestETHOnly', (accounts) => {
         
         const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
         assert.equal(
-            new BN((17*oneEther).toString(16),16).toString(16),
-            new BN((stageAmount).toString(16),16).toString(16),
+            BigNumber(17*oneEther).toString(16),
+            BigNumber(stageAmount).toString(16),
             "Wrong Stage amount"
         );
         const stageNumberBefore = (await ContestETHOnlyMockInstance.getStageNumber( { from: accountOne}));
@@ -966,8 +966,8 @@ contract('ContestETHOnly', (accounts) => {
         const stageNumberAfter = (await ContestETHOnlyMockInstance.getStageNumber( { from: accountOne}));
         
         assert.equal(
-            ((new BN(stageNumberBefore,10)).add(new BN(1,10))).toString(16),
-            new BN(stageNumberAfter,10).toString(16),
+            (BigNumber(stageNumberBefore).plus(BigNumber(1))).toString(16),
+            BigNumber(stageNumberAfter).toString(16),
             "Stage does not switch"
         );
     });
@@ -977,7 +977,7 @@ contract('ContestETHOnly', (accounts) => {
         var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
         await ContestETHOnlyMockInstance.init(
                                                                 3, // stagesCount,
-                                                                ['0x'+(9*oneEther).toString(16),'0x'+(3*oneEther).toString(16),'0x'+(3*oneEther).toString(16)], // stagesMinAmount
+                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
                                                                 10, // contestPeriodInSeconds,
                                                                 10, // votePeriodInSeconds,
                                                                 10, // revokePeriodInSeconds,
@@ -998,16 +998,16 @@ contract('ContestETHOnly', (accounts) => {
         
         
         // make some pledge 17ETH to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+BigNumber(5*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
+        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+BigNumber(1*oneEther).toString(16) });
         
         const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
         assert.equal(
-            new BN((17*oneEther).toString(16),16).toString(16),
-            new BN((stageAmount).toString(16),16).toString(16),
+            BigNumber(17*oneEther).toString(16),
+            BigNumber(stageAmount).toString(16),
             "Wrong Stage amount"
         );
         // pass time.   to voting period
@@ -1060,51 +1060,53 @@ contract('ContestETHOnly', (accounts) => {
         // 2nd place
         assert.equal(
             (
-            new BN((17*oneEther).toString(16),16).mul(new BN(30,10)).div(new BN(100,10))
+                BigNumber(17*oneEther).times(BigNumber(30)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountFiveEndingBalance,10)).sub(new BN(accountFiveStartingBalance,10)).add((new BN(claim5TxObj["receipt"].gasUsed,10)).mul(new BN(claim5Tx.gasPrice,10)))
+                BigNumber(accountFiveEndingBalance).minus(BigNumber(accountFiveStartingBalance)).plus((BigNumber(claim5TxObj["receipt"].gasUsed)).times(BigNumber(claim5Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for winners(2nd place)"
         );
         // 3d place
         assert.equal(
             (
-            new BN((17*oneEther).toString(16),16).mul(new BN(10,10)).div(new BN(100,10))
+                BigNumber(17*oneEther).times(BigNumber(10)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountSixEndingBalance,10)).sub(new BN(accountSixStartingBalance,10)).add((new BN(claim6TxObj["receipt"].gasUsed,10)).mul(new BN(claim6Tx.gasPrice,10)))
+                BigNumber(accountSixEndingBalance).minus(BigNumber(accountSixStartingBalance)).plus((BigNumber(claim6TxObj["receipt"].gasUsed)).times(BigNumber(claim6Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for winners(3rd place)"
         );
         // 1st place 5(vote) 1(delegated) 1(delegated)
         assert.equal(
             (
-            new BN((17*oneEther).toString(16),16).mul(new BN(50,10)).div(new BN(100,10))
+                BigNumber(17*oneEther).times(BigNumber(50)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountSevenEndingBalance,10)).sub(new BN(accountSevenStartingBalance,10)).add((new BN(claim7TxObj["receipt"].gasUsed,10)).mul(new BN(claim7Tx.gasPrice,10)))
+                BigNumber(accountSevenEndingBalance).minus(BigNumber(accountSevenStartingBalance)).plus((BigNumber(claim7TxObj["receipt"].gasUsed)).times(BigNumber(claim7Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for winners(1st place)"
         );
         assert.equal(
             (
-            new BN((17*oneEther).toString(16),16).mul(new BN(5,10)).div(new BN(100,10))
+                BigNumber(17*oneEther).times(BigNumber(5)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountEightEndingBalance,10)).sub(new BN(accountEightStartingBalance,10)).add((new BN(claim8TxObj["receipt"].gasUsed,10)).mul(new BN(claim8Tx.gasPrice,10)))
+                BigNumber(accountEightEndingBalance).minus(BigNumber(accountEightStartingBalance)).plus((BigNumber(claim8TxObj["receipt"].gasUsed)).times(BigNumber(claim8Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
         assert.equal(
             (
-            new BN((17*oneEther).toString(16),16).mul(new BN(5,10)).div(new BN(100,10))
+                BigNumber(17*oneEther).times(BigNumber(5)).div(BigNumber(100))
             ).toString(16), 
             (
-                (new BN(accountNineEndingBalance,10)).sub(new BN(accountNineStartingBalance,10)).add((new BN(claim9TxObj["receipt"].gasUsed,10)).mul(new BN(claim9Tx.gasPrice,10)))
+                BigNumber(accountNineEndingBalance).minus(BigNumber(accountNineStartingBalance)).plus((BigNumber(claim9TxObj["receipt"].gasUsed)).times(BigNumber(claim9Tx.gasPrice)))
             ).toString(16), 
             "Wrong reward for loser"
         );
     });
-   
+ 
+ 
+ 
 });

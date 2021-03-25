@@ -18,12 +18,13 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
+const HDWalletProvider = require('@truffle/hdwallet-provider');
 // const infuraKey = "fj4jll3k.....";
 //
 // const fs = require('fs');
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
 
+require('dotenv').config();
 
 module.exports = {
     
@@ -74,6 +75,14 @@ module.exports = {
     // network_id: 2111,   // This network is yours, in the cloud.
     // production: true    // Treats this network as if it was a public net. (default: false)
     // }
+    rinkeby: {
+        provider: () => new HDWalletProvider(process.env.private_key, 'https://rinkeby.infura.io/v3/'+process.env.infura_project_id),
+        network_id: 4,       // Rinkeby's id
+        gas: 9000000,        
+        //confirmations: 2,    
+        timeoutBlocks: 200,  
+        skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+    },
   },
 
   // Set default mocha options here, use special reporters etc.
@@ -84,15 +93,20 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: "0.6.2",    // Fetch exact version from solc-bin (default: truffle's version)
+      version: "0.8.3",    // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       settings: {          // See the solidity docs for advice about optimization and evmVersion
         optimizer: {
           enabled: true,
-          runs: 500
+          runs: 200
         },
-    // evmVersion: "byzantium"
+      //  evmVersion: "byzantium"
       }
     },
+  },
+  plugins: ['truffle-plugin-verify'],
+  
+  api_keys: {
+    etherscan: process.env.etherscan_api_key
   },
 };

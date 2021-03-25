@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.0 <0.7.0;
+pragma solidity ^0.8.0;
 
 import "./ContestBase.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 contract Contest is ContestBase {
     address token;
@@ -31,7 +31,7 @@ contract Contest is ContestBase {
         public 
         initializer 
     {
-        super.init(stagesCount, stagesMinAmount, contestPeriodInSeconds, votePeriodInSeconds, revokePeriodInSeconds, percentForWinners, judges);
+        __ContestBase__init(stagesCount, stagesMinAmount, contestPeriodInSeconds, votePeriodInSeconds, revokePeriodInSeconds, percentForWinners, judges);
         token = token_address;
     }
         
@@ -47,7 +47,7 @@ contract Contest is ContestBase {
      * @param stageID Stage number
      */
     function pledge(uint256 amount, uint256 stageID) public virtual override nonReentrant() {
-        uint256 _allowedAmount = IERC20(token).allowance(_msgSender(), address(this));
+        uint256 _allowedAmount = IERC20Upgradeable(token).allowance(_msgSender(), address(this));
         require(
             (
                 (amount <= _allowedAmount) ||
@@ -56,7 +56,7 @@ contract Contest is ContestBase {
             "Amount exceeds allowed balance");
 
         // try to get
-        bool success = IERC20(token).transferFrom(_msgSender(), address(this), _allowedAmount);
+        bool success = IERC20Upgradeable(token).transferFrom(_msgSender(), address(this), _allowedAmount);
         require(success == true, "Transfer tokens were failed"); 
         
         _pledge(amount, stageID);
@@ -67,7 +67,7 @@ contract Contest is ContestBase {
      */
     function revokeAfter(uint256 amount) internal virtual override nonReentrant() {
         // todo: 0 return back to user 
-        bool success = IERC20(token).transfer(_msgSender(),amount);
+        bool success = IERC20Upgradeable(token).transfer(_msgSender(),amount);
         require(success == true, 'Transfer tokens were failed');    
     }
     
@@ -75,7 +75,7 @@ contract Contest is ContestBase {
      * @param amount amount
      */
     function _claimAfter(uint256 amount) internal virtual override nonReentrant() {
-        bool success = IERC20(token).transfer(_msgSender(),amount);
+        bool success = IERC20Upgradeable(token).transfer(_msgSender(),amount);
         require(success == true, 'Transfer tokens were failed');    
     }
 }
