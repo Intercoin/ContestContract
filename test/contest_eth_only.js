@@ -1,1112 +1,577 @@
-const BN = require('bn.js'); // https://github.com/indutny/bn.js
-const BigNumber = require('bignumber.js');
-const util = require('util');
-const ContestETHOnly = artifacts.require("ContestETHOnly");
-const ContestETHOnlyMock = artifacts.require("ContestETHOnlyMock");
-//const ERC20MintableToken = artifacts.require("ERC20Mintable");
-const truffleAssert = require('truffle-assertions');
+const { ethers, waffle } = require('hardhat');
+const { BigNumber } = require('ethers');
+const { expect } = require('chai');
+const chai = require('chai');
+const { time } = require('@openzeppelin/test-helpers');
 
-const helper = require("../helpers/truffleTestHelper");
+const ZERO = BigNumber.from('0');
+const ONE = BigNumber.from('1');
+const TWO = BigNumber.from('2');
+const THREE = BigNumber.from('3');
+const FOUR = BigNumber.from('4');
+const FIVE = BigNumber.from('5');
+const SIX = BigNumber.from('6');
+const SEVEN = BigNumber.from('7');
+const NINE = BigNumber.from('9');
+const TEN = BigNumber.from('10');
+const ELEVEN = BigNumber.from('11');
+const HUNDRED = BigNumber.from('100');
+const THOUSAND = BigNumber.from('1000');
+const MILLION = BigNumber.from('1000000');
 
-contract('ContestETHOnly', (accounts) => {
-    
-    // it("should assert true", async function(done) {
-    //     await TestExample.deployed();
-    //     assert.isTrue(true);
-    //     done();
-    //   });
+
+const ONE_ETH = ethers.utils.parseEther('1');
+
+//const TOTALSUPPLY = ethers.utils.parseEther('1000000000');    
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+const DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
+
+describe("ContestETHOnly", function () {
+    const accounts = waffle.provider.getWallets();
     
     // Setup accounts.
-    const accountOne = accounts[0];
-    const accountTwo = accounts[1];  
-    const accountThree = accounts[2];
-    const accountFourth= accounts[3];
-    const accountFive = accounts[4];
-    const accountSix = accounts[5];
-    const accountSeven = accounts[6];
-    const accountEight = accounts[7];
-    const accountNine = accounts[8];
-    const accountTen = accounts[9];
-    const accountEleven = accounts[10];
-    const accountTwelwe = accounts[11];
-
+    const owner = accounts[0];                     
+    const accountOne = accounts[1];  
+    const accountTwo = accounts[2];
+    const accountThree= accounts[3];
+    const accountFourth = accounts[4];
+    const accountFive = accounts[5];
+    const accountSix = accounts[6];
+    const accountSeven = accounts[7];
+    const accountEight = accounts[8];
+    const accountNine = accounts[9];
+    const accountTen = accounts[10];
+    const accountEleven = accounts[11];
+    const accountTwelwe = accounts[12];
     
-    
-    // setup useful values
-    const oneEther = 1000000000000000000; // 1eth
+    // setup useful vars
+    var ContestETHOnlyF;
+    var ContestETHOnlyMockF;
     
     var ContestETHOnlyMockInstance;
+    var stageID;
+    var snapId;
+    var  minAmountInStage;
+    beforeEach("deploying", async() => {
 
-    it('should disable recieve() method', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                        3, // stagesCount,
-                                        ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                        100, // contestPeriodInSeconds,
-                                        100, // votePeriodInSeconds,
-                                        100, // revokePeriodInSeconds,
-                                        [50,30,10], //percentForWinners,
-                                        [] // judges
-                                        );
+        // make snapshot before time manipulations
+        snapId = await ethers.provider.send('evm_snapshot', []);
+
+        ContestETHOnlyF = await ethers.getContractFactory("ContestETHOnly");    
+        ContestETHOnlyMockF = await ethers.getContractFactory("ContestETHOnlyMock");
+        //console.log(`beforeEach("deploying"`);
+    });
+
+    
+    afterEach("deploying", async() => { 
+        // restore snapshot
+        await ethers.provider.send('evm_revert', [snapId]);
+        //console.log(`afterEach("deploying"`);
+    });
+
+    describe("Simple tests", function () {
+        beforeEach("deploying", async() => {
+            stageID = 0;
+            minAmountInStage = THREE.mul(ONE_ETH);
+
+            // let timePeriod = 60*24*60*60;
+            // timestamps = [blockTime+(2*timePeriod), blockTime+(4*timePeriod), blockTime+(6*timePeriod)];
+            // prices = [100000, 150000, 180000]; // (0.0010/0.0015/0.0018)  mul by 1e8. 0.001 means that for 1 eth got 1000 tokens    //_00000000
+            // lastTime = parseInt(blockTime)+(8*timePeriod);
+
+            ContestETHOnlyMockInstance = await ContestETHOnlyMockF.connect(owner).deploy();
+            await ContestETHOnlyMockInstance.connect(owner).init(
+                3, // stagesCount,
+                [minAmountInStage,minAmountInStage,minAmountInStage], // stagesMinAmount
+                100, // contestPeriodInSeconds,
+                100, // votePeriodInSeconds,
+                100, // revokePeriodInSeconds,
+                [50,30,10], //percentForWinners,
+                [] // judges
+            );
+        });
+
+        it('should disable recieve() method', async () => {
+            const amountETHSendToContract = ONE_ETH; // 1ETH
+            // send ETH to Contract
+            await expect(
+                accountOne.sendTransaction({
+                    to: ContestETHOnlyMockInstance.address, 
+                    value: amountETHSendToContract
+                })
+            ).to.be.revertedWith("Method does not support. Send ETH with pledgeETH() method");
+            
+        });
+
+        it('should enter in active stage', async () => {
+            await ContestETHOnlyMockInstance.connect(accountOne).enter(stageID);
+            // revert if trying to double enter
+            await expect(
+                ContestETHOnlyMockInstance.connect(accountOne).enter(stageID)
+            ).to.be.revertedWith("Sender must not be in contestant list");
+        });
         
-        const amountETHSendToContract = 1*10**18; // 1ETH
-        // send ETH to Contract
-        await truffleAssert.reverts(
-            web3.eth.sendTransaction({
-                from:accountOne,
-                to: ContestETHOnlyMockInstance.address, 
-                value: amountETHSendToContract
+        it('should leave in active stage if entered before', async () => {
+            await ContestETHOnlyMockInstance.connect(accountOne).enter(stageID);
+            await ContestETHOnlyMockInstance.connect(accountOne).leave(stageID);
+            // revert if trying to double leave
+            await expect(
+                ContestETHOnlyMockInstance.connect(accountOne).leave(stageID)
+            ).to.be.revertedWith("Sender must be in contestant list");
+        });
+
+        it('should prevent pledge if entered before', async () => {
+            await ContestETHOnlyMockInstance.connect(accountOne).enter(stageID);
+            // revert if trying to double enter
+            await expect(
+                ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH}),
+            ).to.be.revertedWith("Sender must not be in contestant list");
+        });
+
+        it('should pledge before and during contestPeriod', async () => {
+            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            await ContestETHOnlyMockInstance.connect(accountTwo).enter(stageID);
+        });
+
+        it('should prevent pledge in voting or revoking periods', async () => {
+
+            // make some pledge to reach minimum                                                                
+            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+
+            // pass time.   to voting period
+            await ethers.provider.send('evm_increaseTime', [100]);
+            await ethers.provider.send('evm_mine');
+            
+            // try to pledge again
+            await expect(
+                ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH })
+            ).to.be.revertedWith("Stage is out of contest period");
+            
+            // pass another 10 seconds. to revoke period
+            await ethers.provider.send('evm_increaseTime', [100]);
+            await ethers.provider.send('evm_mine');
+            
+            // try to pledge again
+            await expect(
+                ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH })
+            ).to.be.revertedWith("Stage is out of contest period");
+        });
+
+        it('should prevent double vote ', async () => {
+            // make some pledge to reach minimum
+            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            
+            // pass time.   to voting period
+            await ethers.provider.send('evm_increaseTime', [100]);
+            await ethers.provider.send('evm_mine');
+            await ContestETHOnlyMockInstance.connect(accountTwo).enter(stageID);
+            await ContestETHOnlyMockInstance.connect(accountOne).vote(accountTwo.address, stageID);
+            await expect(
+                ContestETHOnlyMockInstance.connect(accountOne).vote(accountTwo.address, stageID)
+            ).to.be.revertedWith("must have not voted or delegated before");
+        });
+
+        it('should prevent vote outside of voting period', async () => {
+            
+            // make some pledge to reach minimum
+            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            await ContestETHOnlyMockInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            
+            await expect(
+                ContestETHOnlyMockInstance.connect(accountOne).vote(accountTwo.address, stageID)
+            ).to.be.revertedWith("Stage is out of voting period");
+            
+            // pass time.   to voting period
+            await ethers.provider.send('evm_increaseTime', [100]);
+            await ethers.provider.send('evm_mine');
+            
+            await expect(
+                ContestETHOnlyMockInstance.connect(accountOne).vote(accountTwo.address, stageID)
+            ).to.be.revertedWith("contestantAddress must be in contestant list");
+            
+            await ContestETHOnlyMockInstance.connect(accountTwo).enter(stageID);
+            
+            
+            await ContestETHOnlyMockInstance.connect(accountOne).vote(accountTwo.address, stageID);
+            
+            // pass time again. to revoke period
+            await ethers.provider.send('evm_increaseTime', [100]);
+            await ethers.provider.send('evm_mine');
+            
+            await ContestETHOnlyMockInstance.connect(accountThree).enter(stageID);
+            await expect(
+                ContestETHOnlyMockInstance.connect(accountFourth).vote(accountThree.address, stageID),
+            ).to.be.revertedWith("Stage is out of voting period");
+        });
+
+        it('should delegate to some1', async () => {
+            
+            // make some pledge to reach minimum
+            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            await ContestETHOnlyMockInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            
+            // pass time.   to voting period
+            await ethers.provider.send('evm_increaseTime', [100]);
+            await ethers.provider.send('evm_mine');
+            
+            await ContestETHOnlyMockInstance.connect(accountTwo).enter(stageID);
+            await ContestETHOnlyMockInstance.connect(accountOne).delegate(accountTwo.address, stageID);
+        });    
+
+        it('should revoke on revoking period', async () => {
+            
+            const revokeFee = await ContestETHOnlyMockInstance.getRevokeFee();
+            const accountFourthStartingBalance = await ethers.provider.getBalance(accountFourth.address);
+            
+            // make some pledge to reach minimum
+            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            let pledgeTxObj = await ContestETHOnlyMockInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            
+            // pass time.   to revoking period
+            await ethers.provider.send('evm_increaseTime', [200]);
+            await ethers.provider.send('evm_mine');
+            
+            // make revoke 
+            let revokeTxObj = await ContestETHOnlyMockInstance.connect(accountFourth).revoke(stageID);
+            
+            const accountFourthEndingBalance = await ethers.provider.getBalance(accountFourth.address);
+
+            expect(accountFourthStartingBalance).not.to.be.eq(accountFourthEndingBalance);
+
+            let pledgeTx = await pledgeTxObj.wait();
+            let revokeTx = await revokeTxObj.wait();
+
+            let actual = accountFourthEndingBalance;
+            let expected = (
+                // starting balance
+                (accountFourthStartingBalance)
+                // revoke fee 
+                .sub(
+                    ONE_ETH.mul(revokeFee).div(MILLION)
+                )
+                // consuming for pledge transaction 
+                .sub(
+                    ONE.mul(pledgeTx.gasUsed).mul(pledgeTx.effectiveGasPrice)
+                    )
+                // consuming for revoke transaction 
+                .sub(
+                    ONE.mul(revokeTx.gasUsed).mul(revokeTx.effectiveGasPrice)
+                    )
+                );
+
+            expect(actual).to.be.eq(expected);
+            
+        });  
+
+        it('should revoke on voting period with gradually increased revoke penalty', async () => {
+            
+            const revokeFee = await ContestETHOnlyMockInstance.getRevokeFee();
+            const accountFourthStartingBalance = await ethers.provider.getBalance(accountFourth.address);
+            
+            // make some pledge to reach minimum
+            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            let pledgeTxObj = await ContestETHOnlyMockInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            
+            // pass time.   to voting period
+            // 50 seconds since start voting period. and 2 seconds for blocks: "evm_increaseTime" and "evm_mine"
+            await ethers.provider.send('evm_increaseTime', [150]);
+            await ethers.provider.send('evm_mine');
+
+            let revokeFeeperSecond = revokeFee.div(HUNDRED); // 100 seconds is voting period
+
+            // make revoke 
+            let revokeTxObj = await ContestETHOnlyMockInstance.connect(accountFourth).revoke(stageID);
+            
+            const accountFourthEndingBalance = await ethers.provider.getBalance(accountFourth.address);
+
+            expect(accountFourthStartingBalance).not.to.be.eq(accountFourthEndingBalance);
+            
+            let pledgeTx = await pledgeTxObj.wait();
+            let revokeTx = await revokeTxObj.wait();
+
+            let actual = accountFourthEndingBalance;
+            let expected = (
+                // starting balance
+                (accountFourthStartingBalance)
+                // revoke fee 
+                .sub(
+                    ONE_ETH.mul(revokeFeeperSecond).mul(50+2).div(MILLION)
+                )
+                // consuming for pledge transaction 
+                .sub(
+                    ONE.mul(pledgeTx.gasUsed).mul(pledgeTx.effectiveGasPrice)
+                )
+                // consuming for revoke transaction 
+                .sub(
+                    ONE.mul(revokeTx.gasUsed).mul(revokeTx.effectiveGasPrice)
+                )
+            );
+
+            expect(actual).to.be.eq(expected);
+            
+        });  
+    });
+
+    describe("Stage Workflow", function () {
+        beforeEach("deploying", async() => {
+            stageID = 0;
+            minAmountInStage = THREE.mul(ONE_ETH);
+
+            // let timePeriod = 60*24*60*60;
+            // timestamps = [blockTime+(2*timePeriod), blockTime+(4*timePeriod), blockTime+(6*timePeriod)];
+            // prices = [100000, 150000, 180000]; // (0.0010/0.0015/0.0018)  mul by 1e8. 0.001 means that for 1 eth got 1000 tokens    //_00000000
+            // lastTime = parseInt(blockTime)+(8*timePeriod);
+
+            
+            ContestETHOnlyMockInstance = await ContestETHOnlyMockF.connect(owner).deploy();
+            await ContestETHOnlyMockInstance.connect(owner).init(
+                3, // stagesCount,
+                [NINE.mul(ONE_ETH),THREE.mul(ONE_ETH),THREE.mul(ONE_ETH)], // stagesMinAmount
+                100, // contestPeriodInSeconds,
+                100, // votePeriodInSeconds,
+                100, // revokePeriodInSeconds,
+                [50,30,10], //percentForWinners,
+                [] // judges
+            );
+        });
+        it('shouldnt complete until stage have not ended yet', async () => {
+             await expect(
+                ContestETHOnlyMockInstance.connect(owner).complete(stageID)
+            ).to.be.revertedWith("Last stage have not ended yet");
+        }); 
+        
+
+        let testData = [
+            {
+                title: 'should get correct prizes for winners&losers',
+                entered: [accountFive, accountSix, accountSeven, accountEight, accountNine],
+                pledged: [
+                    [accountOne,FIVE.mul(ONE_ETH)],
+                    [accountTwo,THREE.mul(ONE_ETH)],
+                    [accountThree,ONE_ETH],
+                    [accountFourth,ONE_ETH],
+                    [accountTen,ONE_ETH]
+                ],
+                voting:[
+                    [accountOne,accountFive],
+                    [accountTwo,accountSix],
+                    [accountThree,accountSeven],
+                    [accountFourth,accountEight],
+                    [accountTen,accountNine]
+                ],
+                delegating:[],
+                claiming: [
+                    [accountFive,   50],
+                    [accountSix,    30],
+                    [accountSeven,  10],
+                    [accountEight,  5],
+                    [accountNine,   5],
+                ],
+                claimingDenominator:1
+            },
+            {
+                title: 'winners\'s same weights(order by entering)',
+                entered: [accountFive, accountSix, accountSeven, accountEight, accountNine],
+                pledged: [
+                    [accountOne,FIVE.mul(ONE_ETH)],
+                    [accountTwo,FIVE.mul(ONE_ETH)],
+                    [accountThree,FIVE.mul(ONE_ETH)],
+                    [accountFourth,ONE_ETH],
+                    [accountTen,ONE_ETH]
+                ],
+                voting:[
+                    [accountOne,accountFive],
+                    [accountTwo,accountSix],
+                    [accountThree,accountSeven],
+                    [accountFourth,accountEight],
+                    [accountTen,accountNine]
+                ],
+                delegating:[],
+                claiming: [
+                    [accountFive,   50],
+                    [accountSix,    30],
+                    [accountSeven,  10],
+                    [accountEight,  5],
+                    [accountNine,   5],
+                ],
+                claimingDenominator:1
+            },
+            {
+                title: 'the one winner with 3 contest\'s prizes',
+                entered: [accountFive, accountSix, accountSeven, accountEight, accountNine],
+                pledged: [
+                    [accountOne,FIVE.mul(ONE_ETH)],
+                    [accountTwo,FIVE.mul(ONE_ETH)],
+                    [accountThree,FIVE.mul(ONE_ETH)],
+                    [accountFourth,ONE_ETH],
+                    [accountTen,ONE_ETH]
+                ],
+                voting:[
+                    [accountOne,accountFive]
+                ],
+                delegating:[],
+                claiming: [
+                    [accountFive,   5000],
+                    [accountSix,    1250],
+                    [accountSeven,  1250],
+                    [accountEight,  1250],
+                    [accountNine,   1250],
+                ],
+                claimingDenominator:100
+            },
+            {
+                title: 'there are no winners',
+                entered: [accountFive, accountSix, accountSeven, accountEight, accountNine],
+                pledged: [
+                    [accountOne,FIVE.mul(ONE_ETH)],
+                    [accountTwo,FIVE.mul(ONE_ETH)],
+                    [accountThree,FIVE.mul(ONE_ETH)],
+                    [accountFourth,ONE_ETH],
+                    [accountTen,ONE_ETH]
+                ],
+                voting:[],
+                delegating:[],
+                claiming: [
+                    [accountFive,   20],
+                    [accountSix,    20],
+                    [accountSeven,  20],
+                    [accountEight,  20],
+                    [accountNine,   20],
+                ],
+                claimingDenominator:1
+            },
+            {
+                title: 'there are no entered',
+                entered: [],
+                pledged: [
+                    [accountOne,FIVE.mul(ONE_ETH)],
+                    [accountTwo,THREE.mul(ONE_ETH)],
+                    [accountThree,ONE_ETH],
+                    [accountFourth,ONE_ETH],
+                    [accountTen,ONE_ETH]
+                ],
+                voting:[],
+                delegating:[],
+                claiming: [
+                    [accountFive,   50, "Sender must be in contestant list"],
+                    [accountSix,    30, "Sender must be in contestant list"],
+                    [accountSeven,  10, "Sender must be in contestant list"],
+                    [accountEight,  5, "Sender must be in contestant list"],
+                    [accountNine,   5, "Sender must be in contestant list"],
+                ],
+                claimingDenominator:1,
+                checkStageSwitchNumber: true
+            },
+            {
+                title: 'test with delegation',
+                entered: [accountFive, accountSix, accountSeven, accountEight, accountNine],
+                pledged: [
+                    [accountOne,FIVE.mul(ONE_ETH)],
+                    [accountTwo,FIVE.mul(ONE_ETH)],
+                    [accountThree,FIVE.mul(ONE_ETH)],
+                    [accountFourth,ONE_ETH],
+                    [accountTen,ONE_ETH]
+                ],
+                voting:[
+                    [accountOne,accountFive],
+                    [accountTwo,accountSix],
+                    [accountThree,accountSeven],
+                ],
+                delegating:[
+                    [accountFourth,accountThree],
+                    [accountTen,accountThree]
+                ],
+                claiming: [
+                    [accountFive,   30],
+                    [accountSix,    10],
+                    [accountSeven,  50],
+                    [accountEight,  5],
+                    [accountNine,   5],
+                ],
+                claimingDenominator:1
+            },
+
+        ];
+      
+
+        testData.forEach(element => {
+            
+            it(element.title, async () => {
+                // enter 
+                for (const acc of element.entered) {
+                    await ContestETHOnlyMockInstance.connect(acc).enter(stageID);
+                };
+
+                var totalPledged = ZERO;
+                // make some pledge X ETH to reach minimum
+                for (const item of element.pledged) {
+                    totalPledged = totalPledged.add(item[1]);
+                    await ContestETHOnlyMockInstance.connect(item[0]).pledgeETH(item[1], stageID, {value:item[1] });
+                };
+
+                const stageAmount = await ContestETHOnlyMockInstance.getStageAmount(stageID);
+                expect(totalPledged).to.be.eq(stageAmount);
                 
-            }),
-            "Method does not support. Send ETH with pledgeETH() method"
-        );
-        
-    });
-    
-    it('should enter in active stage', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                100, // contestPeriodInSeconds,
-                                                                100, // votePeriodInSeconds,
-                                                                100, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
+                const stageNumberBefore = await ContestETHOnlyMockInstance.getStageNumber();
 
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountOne });
-        
-        // revert if trying to double enter
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.enter(stageID, { from: accountOne }),
-            "Sender must not be in contestant list"
-        );
+                // pass time.   to voting period
+                await ethers.provider.send('evm_increaseTime', [100]);
+                await ethers.provider.send('evm_mine');
 
-    });
-    
-    it('should leave in active stage if entered before', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                100, // contestPeriodInSeconds,
-                                                                100, // votePeriodInSeconds,
-                                                                100, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-        
+                //voting
+                for (const item of element.voting) {
+                    await ContestETHOnlyMockInstance.connect(item[0]).vote(item[1].address, stageID);
+                };
+                //delegating
+                for (const item of element.delegating) {
+                    await ContestETHOnlyMockInstance.connect(item[0]).delegate(item[1].address, stageID);
+                };
 
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountOne });
-        
-        await ContestETHOnlyMockInstance.leave(stageID, { from: accountOne });
-        
-        // revert if trying to double leave
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.leave(stageID, { from: accountOne }),
-            "Sender must be in contestant list"
-        );
+                // pass time.   to complete period
+                await ethers.provider.send('evm_increaseTime', [200]);
+                await ethers.provider.send('evm_mine');
 
-    });
-    
-    it('should prevent pledge if entered before', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                100, // contestPeriodInSeconds,
-                                                                100, // votePeriodInSeconds,
-                                                                100, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-                                                                
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountOne });
-        
-        // revert if trying to double enter
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) }),
-            "Sender must not be in contestant list"
-        );
+                // call complete by owner
+                await ContestETHOnlyMockInstance.connect(owner).complete(stageID);
 
-    });
-    
-    it('should pledge before and during contestPeriod', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                100, // contestPeriodInSeconds,
-                                                                100, // votePeriodInSeconds,
-                                                                100, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-        
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) });
-        
-        
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountTwo });
-        
-        
-                    
-    });
-    
-    it('should prevent pledge in voting or revoking periods', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-																
-        // make some pledge to reach minimum                                                                
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) });
+                //calculations
+                for (const item of element.claiming) {
 
-        // pass time.   to voting period
-		await helper.advanceTime(10);
-        
-        // try to pledge again
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) }),
-            "Stage is out of contest period"
-        );
-        
-        // pass another 10 seconds. to revoke period
-        await helper.advanceTime(10);
-        
-        // try to pledge again
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(oneEther).toString(16) }),
-            "Stage is out of contest period"
-        );
-        
-    });
+                    if (typeof(item[2]) !== 'undefined') {
+                        //catch Error
+                        await expect(
+                            ContestETHOnlyMockInstance.connect(item[0]).claim(stageID)
+                        ).to.be.revertedWith("Sender must be in contestant list");
+                    } else {
+                        let startingBalance = await ethers.provider.getBalance(item[0].address);
+                                            
+                        let txObj = await ContestETHOnlyMockInstance.connect(item[0]).claim(stageID);
+                        let tx = await txObj.wait();
 
-    it('should prevent double vote ', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-        
-        // make some pledge to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(3*oneEther).toString(16) });
-        
-        // pass time.   to voting period
-        await helper.advanceTime(10);
-        
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountTwo });
-        await ContestETHOnlyMockInstance.vote(accountTwo, stageID, { from: accountOne});
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.vote(accountTwo, stageID, { from: accountOne}),
-            "must have not voted or delegated before"
-        );
-        
-    });
-    
-    it('should prevent vote outside of voting period', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-        
-        // make some pledge to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(3*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.vote(accountTwo, stageID, { from: accountOne}),
-            "Stage is out of voting period"
-        );
-        
-        // pass time.   to voting period
-        await helper.advanceTime(10);
-        
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.vote(accountTwo, stageID, { from: accountOne}),
-            "contestantAddress must be in contestant list"
-        );
-        
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountTwo });
-        
-        
-        await ContestETHOnlyMockInstance.vote(accountTwo, stageID, { from: accountOne});
-        
-        // pass time again. to revoke period
-        await helper.advanceTime(10);
-        
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountThree });
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.vote(accountThree, stageID, { from: accountFourth}),
-            "Stage is out of voting period"
-        );
-    });
-    
-    it('should delegate to some1', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-        
-        // make some pledge to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(3*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        
-        // pass time.   to voting period
-        await helper.advanceTime(10);
-        
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountTwo });
-        
-        await ContestETHOnlyMockInstance.delegate(accountTwo, stageID, { from: accountOne});
-        
-        
-    });    
+                        let endingBalance = await ethers.provider.getBalance(item[0].address);
 
-    it('should revoke on revoking period', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-        const revokeFee = (await ContestETHOnlyMockInstance.getRevokeFee({from: accountOne}));
-        const accountFourthStartingBalance = (await web3.eth.getBalance(accountFourth));
-        
-        
-        // make some pledge to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(3*oneEther).toString(16) });
-        let pledgeTxObj = await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        
-        // pass time.   to revoking period
-        await helper.advanceTime(20);
-        
-        // make revoke 
-        let revokeTxObj = await ContestETHOnlyMockInstance.revoke(stageID, { from: accountFourth});
-        
-        const accountFourthEndingBalance = (await web3.eth.getBalance(accountFourth));
+                        //reward
+                        expect(
+                            totalPledged.mul(item[1]).div(100).div(element.claimingDenominator)
+                        ).to.be.eq(
+                            endingBalance.sub(startingBalance).add(
+                                ONE.mul(tx.gasUsed).mul(tx.effectiveGasPrice)
+                            )
+                        )
+                    }
+                };
 
-        assert.notEqual(BigNumber(accountFourthStartingBalance).toString(16), BigNumber(accountFourthEndingBalance).toString(16), "Balance after revoke is equal" );
-        
-        
-        let pledgeTx = await web3.eth.getTransaction(pledgeTxObj.tx);
-        let revokeTx = await web3.eth.getTransaction(revokeTxObj.tx);
+                
+                const stageNumberAfter = await ContestETHOnlyMockInstance.getStageNumber();
+                
+                if ((typeof(element.checkStageSwitchNumber) !== 'undefined') && element.checkStageSwitchNumber == true) {
+                    expect(stageNumberBefore.add(1)).to.be.eq(stageNumberAfter)
+                }
+            
+            });
 
-        let actual = (BigNumber(accountFourthEndingBalance)).toString(16);
-        let expected = (
-            // starting balance
-            (
-                BigNumber(accountFourthStartingBalance)
-            )
-            // revoke fee 
-            .minus(
-                BigNumber(1*oneEther).times(BigNumber(revokeFee)).div(BigNumber(1e6))
-            )
-            // consuming for pledge transaction 
-            .minus(
-                BigNumber(pledgeTxObj["receipt"].gasUsed).times(BigNumber(pledgeTx.gasPrice))
-                )
-            // consuming for revoke transaction 
-            .minus(
-                BigNumber(revokeTxObj["receipt"].gasUsed).times(BigNumber(revokeTx.gasPrice))
-                )
-            ).toString(16);
-
-        assert.equal(
-            actual, 
-            expected, 
-            "Wrong revokeFee consuming"
-        );
-        
-    });  
-
-    it('should revoke on voting period with gradually increased revoke penalty', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-        const revokeFee = (await ContestETHOnlyMockInstance.getRevokeFee({from: accountOne}));
-        const accountFourthStartingBalance = (await web3.eth.getBalance(accountFourth));
-        
-        
-        // make some pledge to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(3*oneEther).toString(16) });
-        let pledgeTxObj = await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        
-        // pass time.   to voting period
-        // 5 seconds since start voting period. and 1 second for block "advanceTimeAndBlock"
-        await helper.advanceTimeAndBlock(15);
-        let revokeFeeperSecond = BigNumber(revokeFee).div(BigNumber(10)); // 10 seconds is voting period
-
-        // make revoke 
-        let revokeTxObj = await ContestETHOnlyMockInstance.revoke(stageID, { from: accountFourth});
-        
-        const accountFourthEndingBalance = (await web3.eth.getBalance(accountFourth));
-
-        assert.notEqual(BigNumber(accountFourthStartingBalance).toString(16), BigNumber(accountFourthEndingBalance).toString(16), "Balance after revoke is equal" );
-        
-        let pledgeTx = await web3.eth.getTransaction(pledgeTxObj.tx);
-        let revokeTx = await web3.eth.getTransaction(revokeTxObj.tx);
-
-        let actual = (new BN(accountFourthEndingBalance,10)).toString(16);
-        let expected = (
-            // starting balance
-            BigNumber(accountFourthStartingBalance)
-            // revoke fee 
-            .minus(
-                BigNumber(1*oneEther).times(
-                    BigNumber(revokeFeeperSecond).times(BigNumber(5+1)).div(BigNumber(1000000))
-                )
-            )
-            // consuming for pledge transaction 
-            .minus(
-                BigNumber(pledgeTxObj["receipt"].gasUsed).times(BigNumber(pledgeTx.gasPrice))
-                )
-            // consuming for revoke transaction 
-            .minus(
-                BigNumber(revokeTxObj["receipt"].gasUsed).times(BigNumber(revokeTx.gasPrice))
-                )
-            ).toString(16);
-
-        assert.equal(
-            actual, 
-            expected, 
-            "Wrong revokeFee consuming"
-        );
-        
-    });  
-    
-    it('Stage Workflow: should get correct prizes for winners&losers', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.complete(stageID, { from: accountOne}),
-            "Last stage have not ended yet"
-        );
-        // enter 
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountFive });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountSix });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountSeven });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountEight });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountNine });
-        
-        
-        // make some pledge 11ETH to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(3*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+BigNumber(3*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        
-        const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
-        assert.equal(
-            BigNumber(11*oneEther).toString(16),
-            BigNumber(stageAmount).toString(16),
-            "Wrong Stage amount"
-        );
-        // pass time.   to voting period
-        await helper.advanceTime(10);
-        
-        await ContestETHOnlyMockInstance.vote(accountFive, stageID, { from: accountOne});
-        await ContestETHOnlyMockInstance.vote(accountSix, stageID, { from: accountTwo});
-        await ContestETHOnlyMockInstance.vote(accountSeven, stageID, { from: accountThree});
-        await ContestETHOnlyMockInstance.vote(accountEight, stageID, { from: accountFourth});
-        await ContestETHOnlyMockInstance.vote(accountNine, stageID, { from: accountTen});
-        
-        // pass time.   to complete period
-        await helper.advanceTime(20);
-        
-        // call complete by owner
-        await ContestETHOnlyMockInstance.complete(stageID, { from: accountOne});
-        
-        const accountFiveStartingBalance = (await web3.eth.getBalance(accountFive));
-        const accountSixStartingBalance = (await web3.eth.getBalance(accountSix));
-        const accountSevenStartingBalance = (await web3.eth.getBalance(accountSeven));
-        const accountEightStartingBalance = (await web3.eth.getBalance(accountEight));
-        const accountNineStartingBalance = (await web3.eth.getBalance(accountNine));
-        
-        //claim 5
-        let claim5TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountFive});
-        let claim5Tx = await web3.eth.getTransaction(claim5TxObj.tx);
-        
-        //claim 6
-        let claim6TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountSix});
-        let claim6Tx = await web3.eth.getTransaction(claim6TxObj.tx);
-        
-        //claim 7
-        let claim7TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountSeven});
-        let claim7Tx = await web3.eth.getTransaction(claim7TxObj.tx);
-        
-        //claim 8
-        let claim8TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountEight});
-        let claim8Tx = await web3.eth.getTransaction(claim8TxObj.tx);
-        
-        //claim 9
-        let claim9TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountNine});
-        let claim9Tx = await web3.eth.getTransaction(claim9TxObj.tx);
-        
-        const accountFiveEndingBalance = (await web3.eth.getBalance(accountFive));
-        const accountSixEndingBalance = (await web3.eth.getBalance(accountSix));
-        const accountSevenEndingBalance = (await web3.eth.getBalance(accountSeven));
-        const accountEightEndingBalance = (await web3.eth.getBalance(accountEight));
-        const accountNineEndingBalance = (await web3.eth.getBalance(accountNine));
-        
-        assert.equal(
-            (
-                BigNumber(11*oneEther).times(BigNumber(50)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountFiveEndingBalance).minus(BigNumber(accountFiveStartingBalance)).plus((BigNumber(claim5TxObj["receipt"].gasUsed)).times(BigNumber(claim5Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for winners(1st place)"
-        );
-        assert.equal(
-            (
-                BigNumber(11*oneEther).times(BigNumber(30)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountSixEndingBalance).minus(BigNumber(accountSixStartingBalance)).plus((BigNumber(claim6TxObj["receipt"].gasUsed)).times(BigNumber(claim6Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for winners(2nd place)"
-        );
-        assert.equal(
-            (
-                BigNumber(11*oneEther).times(BigNumber(10)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountSevenEndingBalance).minus(BigNumber(accountSevenStartingBalance)).plus((BigNumber(claim7TxObj["receipt"].gasUsed)).times(BigNumber(claim7Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for winners(3rd place)"
-        );
-        assert.equal(
-            (
-                BigNumber(11*oneEther).times(BigNumber(5)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountEightEndingBalance).minus(BigNumber(accountEightStartingBalance)).plus((BigNumber(claim8TxObj["receipt"].gasUsed)).times(BigNumber(claim8Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        assert.equal(
-            (
-                BigNumber(11*oneEther).times(BigNumber(5)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountNineEndingBalance).minus(BigNumber(accountNineStartingBalance)).plus((BigNumber(claim9TxObj["receipt"].gasUsed)).times(BigNumber(claim9Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        
-    });
-
-    it('Stage Workflow: winners\'s same weights(order by entering)', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-        
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.complete(stageID, { from: accountOne}),
-            "Last stage have not ended yet"
-        );
-        // enter 
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountFive });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountSix });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountSeven });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountEight });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountNine });
-        
-        
-        // make some pledge 17ETH to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        
-        const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
-        assert.equal(
-            BigNumber(17*oneEther).toString(16),
-            BigNumber(stageAmount).toString(16),
-            "Wrong Stage amount"
-        );
-        // pass 10 time.   to voting period
-        await helper.advanceTime(10);
-        
-        await ContestETHOnlyMockInstance.vote(accountFive, stageID, { from: accountOne});
-        await ContestETHOnlyMockInstance.vote(accountSix, stageID, { from: accountTwo});
-        await ContestETHOnlyMockInstance.vote(accountSeven, stageID, { from: accountThree});
-        await ContestETHOnlyMockInstance.vote(accountEight, stageID, { from: accountFourth});
-        await ContestETHOnlyMockInstance.vote(accountNine, stageID, { from: accountTen});
-        
-        // pass time.   to complete period
-        await helper.advanceTime(20);
-        
-        // call complete by owner
-        await ContestETHOnlyMockInstance.complete(stageID, { from: accountOne});
-        
-        const accountFiveStartingBalance = (await web3.eth.getBalance(accountFive));
-        const accountSixStartingBalance = (await web3.eth.getBalance(accountSix));
-        const accountSevenStartingBalance = (await web3.eth.getBalance(accountSeven));
-        const accountEightStartingBalance = (await web3.eth.getBalance(accountEight));
-        const accountNineStartingBalance = (await web3.eth.getBalance(accountNine));
-        
-        //claim 5
-        let claim5TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountFive});
-        let claim5Tx = await web3.eth.getTransaction(claim5TxObj.tx);
-        
-        //claim 6
-        let claim6TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountSix});
-        let claim6Tx = await web3.eth.getTransaction(claim6TxObj.tx);
-        
-        //claim 7
-        let claim7TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountSeven});
-        let claim7Tx = await web3.eth.getTransaction(claim7TxObj.tx);
-        
-        //claim 8
-        let claim8TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountEight});
-        let claim8Tx = await web3.eth.getTransaction(claim8TxObj.tx);
-        
-        //claim 9
-        let claim9TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountNine});
-        let claim9Tx = await web3.eth.getTransaction(claim9TxObj.tx);
-        
-        const accountFiveEndingBalance = (await web3.eth.getBalance(accountFive));
-        const accountSixEndingBalance = (await web3.eth.getBalance(accountSix));
-        const accountSevenEndingBalance = (await web3.eth.getBalance(accountSeven));
-        const accountEightEndingBalance = (await web3.eth.getBalance(accountEight));
-        const accountNineEndingBalance = (await web3.eth.getBalance(accountNine));
-        
-        assert.equal(
-            (
-                BigNumber(17*oneEther).times(BigNumber(50)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountFiveEndingBalance).minus(BigNumber(accountFiveStartingBalance)).plus((BigNumber(claim5TxObj["receipt"].gasUsed)).times(BigNumber(claim5Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for winners(1st place)"
-        );
-        assert.equal(
-            (
-                BigNumber(17*oneEther).times(BigNumber(30)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountSixEndingBalance).minus(BigNumber(accountSixStartingBalance)).plus((BigNumber(claim6TxObj["receipt"].gasUsed)).times(BigNumber(claim6Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for winners(2nd place)"
-        );
-        assert.equal(
-            (
-                BigNumber(17*oneEther).times(BigNumber(10)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountSevenEndingBalance).minus(BigNumber(accountSevenStartingBalance)).plus((BigNumber(claim7TxObj["receipt"].gasUsed)).times(BigNumber(claim7Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for winners(3rd place)"
-        );
-        assert.equal(
-            (
-                BigNumber(17*oneEther).times(BigNumber(5)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountEightEndingBalance).minus(BigNumber(accountEightStartingBalance)).plus((BigNumber(claim8TxObj["receipt"].gasUsed)).times(BigNumber(claim8Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        assert.equal(
-            (
-                BigNumber(17*oneEther).times(BigNumber(5)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountNineEndingBalance).minus(BigNumber(accountNineStartingBalance)).plus((BigNumber(claim9TxObj["receipt"].gasUsed)).times(BigNumber(claim9Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        
-    });
-    
-    it('Stage Workflow: the one winner with 3 contest\'s prizes', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.complete(stageID, { from: accountOne}),
-            "Last stage have not ended yet"
-        );
-        // enter 
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountFive });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountSix });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountSeven });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountEight });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountNine });
-        
-        
-        // make some pledge 17ETH to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        
-        const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
-        assert.equal(
-            BigNumber(17*oneEther).toString(16),
-            BigNumber(stageAmount).toString(16),
-            "Wrong Stage amount"
-        );
-        // pass time.   to voting period
-        await helper.advanceTime(10);
-        
-        await ContestETHOnlyMockInstance.vote(accountFive, stageID, { from: accountOne});
-
-        // pass time.   to complete period
-        await helper.advanceTime(20);
-        
-        // call complete by owner
-        await ContestETHOnlyMockInstance.complete(stageID, { from: accountOne});
-        
-        const accountFiveStartingBalance = (await web3.eth.getBalance(accountFive));
-        const accountSixStartingBalance = (await web3.eth.getBalance(accountSix));
-        const accountSevenStartingBalance = (await web3.eth.getBalance(accountSeven));
-        const accountEightStartingBalance = (await web3.eth.getBalance(accountEight));
-        const accountNineStartingBalance = (await web3.eth.getBalance(accountNine));
-        
-        //claim 5
-        let claim5TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountFive});
-        let claim5Tx = await web3.eth.getTransaction(claim5TxObj.tx);
-        
-        //claim 6
-        let claim6TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountSix});
-        let claim6Tx = await web3.eth.getTransaction(claim6TxObj.tx);
-        
-        //claim 7
-        let claim7TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountSeven});
-        let claim7Tx = await web3.eth.getTransaction(claim7TxObj.tx);
-        
-        //claim 8
-        let claim8TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountEight});
-        let claim8Tx = await web3.eth.getTransaction(claim8TxObj.tx);
-        
-        //claim 9
-        let claim9TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountNine});
-        let claim9Tx = await web3.eth.getTransaction(claim9TxObj.tx);
-        
-        const accountFiveEndingBalance = (await web3.eth.getBalance(accountFive));
-        const accountSixEndingBalance = (await web3.eth.getBalance(accountSix));
-        const accountSevenEndingBalance = (await web3.eth.getBalance(accountSeven));
-        const accountEightEndingBalance = (await web3.eth.getBalance(accountEight));
-        const accountNineEndingBalance = (await web3.eth.getBalance(accountNine));
-
-        assert.equal(
-            (17*oneEther*50/100).toString(16), 
-            (
-                BigNumber(accountFiveEndingBalance).minus(BigNumber(accountFiveStartingBalance)).plus((BigNumber(claim5TxObj["receipt"].gasUsed)).times(BigNumber(claim5Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for winners(1st place)"
-        );
-        assert.equal(
-            (17*oneEther*12.5/100).toString(16), 
-            (
-                BigNumber(accountSixEndingBalance).minus(BigNumber(accountSixStartingBalance)).plus((BigNumber(claim6TxObj["receipt"].gasUsed)).times(BigNumber(claim6Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        assert.equal(
-            (17*oneEther*12.5/100).toString(16), 
-            (
-                BigNumber(accountSevenEndingBalance).minus(BigNumber(accountSevenStartingBalance)).plus((BigNumber(claim7TxObj["receipt"].gasUsed)).times(BigNumber(claim7Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        assert.equal(
-            (17*oneEther*12.5/100).toString(16), 
-            (
-                BigNumber(accountEightEndingBalance).minus(BigNumber(accountEightStartingBalance)).plus((BigNumber(claim8TxObj["receipt"].gasUsed)).times(BigNumber(claim8Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        assert.equal(
-            (17*oneEther*12.5/100).toString(16), 
-            (
-                BigNumber(accountNineEndingBalance).minus(BigNumber(accountNineStartingBalance)).plus((BigNumber(claim9TxObj["receipt"].gasUsed)).times(BigNumber(claim9Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-    });
-
-    it('Stage Workflow: there are no winners', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-																
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.complete(stageID, { from: accountOne}),
-            "Last stage have not ended yet"
-        );
-        // enter 
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountFive });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountSix });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountSeven });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountEight });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountNine });
-        
-        
-        // make some pledge 17ETH to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        
-        const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
-        assert.equal(
-            BigNumber(17*oneEther).toString(16),
-            BigNumber(stageAmount).toString(16),
-            "Wrong Stage amount"
-        );
-        
-        // pass time.   to complete period
-        await helper.advanceTime(30);
-        
-        // call complete by owner
-        await ContestETHOnlyMockInstance.complete(stageID, { from: accountOne});
-        
-        const accountFiveStartingBalance = (await web3.eth.getBalance(accountFive));
-        const accountSixStartingBalance = (await web3.eth.getBalance(accountSix));
-        const accountSevenStartingBalance = (await web3.eth.getBalance(accountSeven));
-        const accountEightStartingBalance = (await web3.eth.getBalance(accountEight));
-        const accountNineStartingBalance = (await web3.eth.getBalance(accountNine));
-        
-        //claim 5
-        let claim5TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountFive});
-        let claim5Tx = await web3.eth.getTransaction(claim5TxObj.tx);
-        
-        //claim 6
-        let claim6TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountSix});
-        let claim6Tx = await web3.eth.getTransaction(claim6TxObj.tx);
-        
-        //claim 7
-        let claim7TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountSeven});
-        let claim7Tx = await web3.eth.getTransaction(claim7TxObj.tx);
-        
-        //claim 8
-        let claim8TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountEight});
-        let claim8Tx = await web3.eth.getTransaction(claim8TxObj.tx);
-        
-        //claim 9
-        let claim9TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountNine});
-        let claim9Tx = await web3.eth.getTransaction(claim9TxObj.tx);
-        
-        const accountFiveEndingBalance = (await web3.eth.getBalance(accountFive));
-        const accountSixEndingBalance = (await web3.eth.getBalance(accountSix));
-        const accountSevenEndingBalance = (await web3.eth.getBalance(accountSeven));
-        const accountEightEndingBalance = (await web3.eth.getBalance(accountEight));
-        const accountNineEndingBalance = (await web3.eth.getBalance(accountNine));
-
-        assert.equal(
-            (17*oneEther*20/100).toString(16), 
-            (
-                BigNumber(accountFiveEndingBalance).minus(BigNumber(accountFiveStartingBalance)).plus((BigNumber(claim5TxObj["receipt"].gasUsed)).times(BigNumber(claim5Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for winners(1st place)"
-        );
-        assert.equal(
-            (17*oneEther*20/100).toString(16), 
-            (
-                BigNumber(accountSixEndingBalance).minus(BigNumber(accountSixStartingBalance)).plus((BigNumber(claim6TxObj["receipt"].gasUsed)).times(BigNumber(claim6Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        assert.equal(
-            (17*oneEther*20/100).toString(16), 
-            (
-                BigNumber(accountSevenEndingBalance).minus(BigNumber(accountSevenStartingBalance)).plus((BigNumber(claim7TxObj["receipt"].gasUsed)).times(BigNumber(claim7Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        assert.equal(
-            (17*oneEther*20/100).toString(16), 
-            (
-                BigNumber(accountEightEndingBalance).minus(BigNumber(accountEightStartingBalance)).plus((BigNumber(claim8TxObj["receipt"].gasUsed)).times(BigNumber(claim8Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        assert.equal(
-            (17*oneEther*20/100).toString(16), 
-            (
-                BigNumber(accountNineEndingBalance).minus(BigNumber(accountNineStartingBalance)).plus((BigNumber(claim9TxObj["receipt"].gasUsed)).times(BigNumber(claim9Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        
-    });
-  
-    it('Stage Workflow: there are no entered', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-        
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.complete(stageID, { from: accountOne}),
-            "Last stage have not ended yet"
-        );
-       
-        // make some pledge 17ETH to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+(1*oneEther).toString(16) });
-        
-        const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
-        assert.equal(
-            BigNumber(17*oneEther).toString(16),
-            BigNumber(stageAmount).toString(16),
-            "Wrong Stage amount"
-        );
-        const stageNumberBefore = (await ContestETHOnlyMockInstance.getStageNumber( { from: accountOne}));
-        
-        // pass time.   to complete period
-        await helper.advanceTime(30);
-        
-        // call complete by owner
-        await ContestETHOnlyMockInstance.complete(stageID, { from: accountOne});
-        
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.claim(stageID, { from: accountFive}), 
-            "Sender must be in contestant list"
-        );
-        
-        
-        const stageNumberAfter = (await ContestETHOnlyMockInstance.getStageNumber( { from: accountOne}));
-        
-        assert.equal(
-            (BigNumber(stageNumberBefore).plus(BigNumber(1))).toString(16),
-            BigNumber(stageNumberAfter).toString(16),
-            "Stage does not switch"
-        );
-    });
-
-    it('Stage Workflow: test with delegation', async () => {
-        let stageID = 0;
-        var ContestETHOnlyMockInstance = await ContestETHOnlyMock.new();
-        await ContestETHOnlyMockInstance.init(
-                                                                3, // stagesCount,
-                                                                ['0x'+BigNumber(9*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16),'0x'+BigNumber(3*oneEther).toString(16)], // stagesMinAmount
-                                                                10, // contestPeriodInSeconds,
-                                                                10, // votePeriodInSeconds,
-                                                                10, // revokePeriodInSeconds,
-                                                                [50,30,10], //percentForWinners,
-                                                                [] // judges
-                                                                );
-																
-        await truffleAssert.reverts(
-            ContestETHOnlyMockInstance.complete(stageID, { from: accountOne}),
-            "Last stage have not ended yet"
-        );
-        // enter 
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountFive });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountSix });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountSeven });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountEight });
-        await ContestETHOnlyMockInstance.enter(stageID, { from: accountNine });
-        
-        
-        // make some pledge 17ETH to reach minimum
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountOne, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountTwo, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(5*oneEther).toString(16), stageID, { from: accountThree, value:'0x'+BigNumber(5*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountFourth, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        await ContestETHOnlyMockInstance.pledgeETH('0x'+BigNumber(1*oneEther).toString(16), stageID, { from: accountTen, value:'0x'+BigNumber(1*oneEther).toString(16) });
-        
-        const stageAmount = (await ContestETHOnlyMockInstance.getStageAmount(stageID, { from: accountOne}));
-        assert.equal(
-            BigNumber(17*oneEther).toString(16),
-            BigNumber(stageAmount).toString(16),
-            "Wrong Stage amount"
-        );
-        // pass time.   to voting period
-        await helper.advanceTime(10);
-        
-        await ContestETHOnlyMockInstance.vote(accountFive, stageID, { from: accountOne});
-        await ContestETHOnlyMockInstance.vote(accountSix, stageID, { from: accountTwo});
-        await ContestETHOnlyMockInstance.vote(accountSeven, stageID, { from: accountThree});
-        await ContestETHOnlyMockInstance.delegate(accountThree, stageID, { from: accountFourth});
-        await ContestETHOnlyMockInstance.delegate(accountThree, stageID, { from: accountTen});
-        
-        // pass time.   to complete period
-        await helper.advanceTime(20);
-        
-        // call complete by owner
-        await ContestETHOnlyMockInstance.complete(stageID, { from: accountOne});
- 
-        const accountFiveStartingBalance = (await web3.eth.getBalance(accountFive));
-        const accountSixStartingBalance = (await web3.eth.getBalance(accountSix));
-        const accountSevenStartingBalance = (await web3.eth.getBalance(accountSeven));
-        const accountEightStartingBalance = (await web3.eth.getBalance(accountEight));
-        const accountNineStartingBalance = (await web3.eth.getBalance(accountNine));
-        
-        //claim 5
-        let claim5TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountFive});
-        let claim5Tx = await web3.eth.getTransaction(claim5TxObj.tx);
-        
-        //claim 6
-        let claim6TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountSix});
-        let claim6Tx = await web3.eth.getTransaction(claim6TxObj.tx);
-        
-        //claim 7
-        let claim7TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountSeven});
-        let claim7Tx = await web3.eth.getTransaction(claim7TxObj.tx);
-        
-        //claim 8
-        let claim8TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountEight});
-        let claim8Tx = await web3.eth.getTransaction(claim8TxObj.tx);
-        
-        //claim 9
-        let claim9TxObj = await ContestETHOnlyMockInstance.claim(stageID, { from: accountNine});
-        let claim9Tx = await web3.eth.getTransaction(claim9TxObj.tx);
-        
-        const accountFiveEndingBalance = (await web3.eth.getBalance(accountFive));
-        const accountSixEndingBalance = (await web3.eth.getBalance(accountSix));
-        const accountSevenEndingBalance = (await web3.eth.getBalance(accountSeven));
-        const accountEightEndingBalance = (await web3.eth.getBalance(accountEight));
-        const accountNineEndingBalance = (await web3.eth.getBalance(accountNine));
-        
-        // 2nd place
-        assert.equal(
-            (
-                BigNumber(17*oneEther).times(BigNumber(30)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountFiveEndingBalance).minus(BigNumber(accountFiveStartingBalance)).plus((BigNumber(claim5TxObj["receipt"].gasUsed)).times(BigNumber(claim5Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for winners(2nd place)"
-        );
-        // 3d place
-        assert.equal(
-            (
-                BigNumber(17*oneEther).times(BigNumber(10)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountSixEndingBalance).minus(BigNumber(accountSixStartingBalance)).plus((BigNumber(claim6TxObj["receipt"].gasUsed)).times(BigNumber(claim6Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for winners(3rd place)"
-        );
-        // 1st place 5(vote) 1(delegated) 1(delegated)
-        assert.equal(
-            (
-                BigNumber(17*oneEther).times(BigNumber(50)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountSevenEndingBalance).minus(BigNumber(accountSevenStartingBalance)).plus((BigNumber(claim7TxObj["receipt"].gasUsed)).times(BigNumber(claim7Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for winners(1st place)"
-        );
-        assert.equal(
-            (
-                BigNumber(17*oneEther).times(BigNumber(5)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountEightEndingBalance).minus(BigNumber(accountEightStartingBalance)).plus((BigNumber(claim8TxObj["receipt"].gasUsed)).times(BigNumber(claim8Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-        assert.equal(
-            (
-                BigNumber(17*oneEther).times(BigNumber(5)).div(BigNumber(100))
-            ).toString(16), 
-            (
-                BigNumber(accountNineEndingBalance).minus(BigNumber(accountNineStartingBalance)).plus((BigNumber(claim9TxObj["receipt"].gasUsed)).times(BigNumber(claim9Tx.gasPrice)))
-            ).toString(16), 
-            "Wrong reward for loser"
-        );
-    });
- 
- 
- 
-});
+        });
+    }); 
+}); 

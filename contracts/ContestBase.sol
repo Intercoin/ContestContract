@@ -332,7 +332,7 @@ contract ContestBase is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         address[] memory judges
     ) 
         internal 
-        initializer 
+        onlyInitializing 
     {
         __Ownable_init();
         __ReentrancyGuard_init();
