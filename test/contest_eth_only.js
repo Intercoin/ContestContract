@@ -45,10 +45,11 @@ describe("ContestETHOnly", function () {
     const accountTwelwe = accounts[12];
     
     // setup useful vars
-    var ContestETHOnlyF;
-    var ContestETHOnlyMockF;
     
-    var ContestETHOnlyMockInstance;
+    var ContestETHOnlyF;
+    var ContestFactoryFactory;
+    
+    var ContestETHOnlyInstance;
     var stageID;
     var snapId;
     var  minAmountInStage;
@@ -57,8 +58,9 @@ describe("ContestETHOnly", function () {
         // make snapshot before time manipulations
         snapId = await ethers.provider.send('evm_snapshot', []);
 
-        ContestETHOnlyF = await ethers.getContractFactory("ContestETHOnly");    
-        ContestETHOnlyMockF = await ethers.getContractFactory("ContestETHOnlyMock");
+        ContestETHOnlyF = await ethers.getContractFactory("ContestETHOnly");
+        ContestFactoryFactory = await ethers.getContractFactory("ContestFactory");
+           
         //console.log(`beforeEach("deploying"`);
     });
 
@@ -79,16 +81,33 @@ describe("ContestETHOnly", function () {
             // prices = [100000, 150000, 180000]; // (0.0010/0.0015/0.0018)  mul by 1e8. 0.001 means that for 1 eth got 1000 tokens    //_00000000
             // lastTime = parseInt(blockTime)+(8*timePeriod);
 
-            ContestETHOnlyMockInstance = await ContestETHOnlyMockF.connect(owner).deploy();
-            await ContestETHOnlyMockInstance.connect(owner).init(
+            let contestFactory = await ContestFactoryFactory.connect(owner).deploy();
+            let tx = await contestFactory.connect(owner).produceETHOnly(
                 3, // stagesCount,
                 [minAmountInStage,minAmountInStage,minAmountInStage], // stagesMinAmount
                 100, // contestPeriodInSeconds,
                 100, // votePeriodInSeconds,
                 100, // revokePeriodInSeconds,
                 [50,30,10], //percentForWinners,
-                [] // judges
+                [] // judges   
             );
+
+            const rc = await tx.wait(); // 0ms, as tx is already confirmed
+            const event = rc.events.find(event => event.event === 'InstanceCreated');
+            const [instance,] = event.args;
+
+            ContestETHOnlyInstance = await ethers.getContractAt("ContestETHOnly",instance);   
+
+            // ContestETHOnlyInstance = await ContestETHOnlyF.connect(owner).deploy();
+            // await ContestETHOnlyInstance.connect(owner).init(
+            //     3, // stagesCount,
+            //     [minAmountInStage,minAmountInStage,minAmountInStage], // stagesMinAmount
+            //     100, // contestPeriodInSeconds,
+            //     100, // votePeriodInSeconds,
+            //     100, // revokePeriodInSeconds,
+            //     [50,30,10], //percentForWinners,
+            //     [] // judges
+            // );
         });
 
         it('should disable recieve() method', async () => {
@@ -96,7 +115,7 @@ describe("ContestETHOnly", function () {
             // send ETH to Contract
             await expect(
                 accountOne.sendTransaction({
-                    to: ContestETHOnlyMockInstance.address, 
+                    to: ContestETHOnlyInstance.address, 
                     value: amountETHSendToContract
                 })
             ).to.be.revertedWith("Method does not support. Send ETH with pledgeETH() method");
@@ -104,41 +123,41 @@ describe("ContestETHOnly", function () {
         });
 
         it('should enter in active stage', async () => {
-            await ContestETHOnlyMockInstance.connect(accountOne).enter(stageID);
+            await ContestETHOnlyInstance.connect(accountOne).enter(stageID);
             // revert if trying to double enter
             await expect(
-                ContestETHOnlyMockInstance.connect(accountOne).enter(stageID)
+                ContestETHOnlyInstance.connect(accountOne).enter(stageID)
             ).to.be.revertedWith("Sender must not be in contestant list");
         });
         
         it('should leave in active stage if entered before', async () => {
-            await ContestETHOnlyMockInstance.connect(accountOne).enter(stageID);
-            await ContestETHOnlyMockInstance.connect(accountOne).leave(stageID);
+            await ContestETHOnlyInstance.connect(accountOne).enter(stageID);
+            await ContestETHOnlyInstance.connect(accountOne).leave(stageID);
             // revert if trying to double leave
             await expect(
-                ContestETHOnlyMockInstance.connect(accountOne).leave(stageID)
+                ContestETHOnlyInstance.connect(accountOne).leave(stageID)
             ).to.be.revertedWith("Sender must be in contestant list");
         });
 
         it('should prevent pledge if entered before', async () => {
-            await ContestETHOnlyMockInstance.connect(accountOne).enter(stageID);
+            await ContestETHOnlyInstance.connect(accountOne).enter(stageID);
             // revert if trying to double enter
             await expect(
-                ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH}),
+                ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH}),
             ).to.be.revertedWith("Sender must not be in contestant list");
         });
 
         it('should pledge before and during contestPeriod', async () => {
-            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
-            await ContestETHOnlyMockInstance.connect(accountTwo).enter(stageID);
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            await ContestETHOnlyInstance.connect(accountTwo).enter(stageID);
         });
 
         it('should prevent pledge in voting or revoking periods', async () => {
 
             // make some pledge to reach minimum                                                                
-            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
-            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
-            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
 
             // pass time.   to voting period
             await ethers.provider.send('evm_increaseTime', [100]);
@@ -146,7 +165,7 @@ describe("ContestETHOnly", function () {
             
             // try to pledge again
             await expect(
-                ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH })
+                ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH })
             ).to.be.revertedWith("Stage is out of contest period");
             
             // pass another 10 seconds. to revoke period
@@ -155,32 +174,32 @@ describe("ContestETHOnly", function () {
             
             // try to pledge again
             await expect(
-                ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH })
+                ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH })
             ).to.be.revertedWith("Stage is out of contest period");
         });
 
         it('should prevent double vote ', async () => {
             // make some pledge to reach minimum
-            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
             
             // pass time.   to voting period
             await ethers.provider.send('evm_increaseTime', [100]);
             await ethers.provider.send('evm_mine');
-            await ContestETHOnlyMockInstance.connect(accountTwo).enter(stageID);
-            await ContestETHOnlyMockInstance.connect(accountOne).vote(accountTwo.address, stageID);
+            await ContestETHOnlyInstance.connect(accountTwo).enter(stageID);
+            await ContestETHOnlyInstance.connect(accountOne).vote(accountTwo.address, stageID);
             await expect(
-                ContestETHOnlyMockInstance.connect(accountOne).vote(accountTwo.address, stageID)
+                ContestETHOnlyInstance.connect(accountOne).vote(accountTwo.address, stageID)
             ).to.be.revertedWith("must have not voted or delegated before");
         });
 
         it('should prevent vote outside of voting period', async () => {
             
             // make some pledge to reach minimum
-            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
-            await ContestETHOnlyMockInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            await ContestETHOnlyInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
             
             await expect(
-                ContestETHOnlyMockInstance.connect(accountOne).vote(accountTwo.address, stageID)
+                ContestETHOnlyInstance.connect(accountOne).vote(accountTwo.address, stageID)
             ).to.be.revertedWith("Stage is out of voting period");
             
             // pass time.   to voting period
@@ -188,53 +207,53 @@ describe("ContestETHOnly", function () {
             await ethers.provider.send('evm_mine');
             
             await expect(
-                ContestETHOnlyMockInstance.connect(accountOne).vote(accountTwo.address, stageID)
+                ContestETHOnlyInstance.connect(accountOne).vote(accountTwo.address, stageID)
             ).to.be.revertedWith("contestantAddress must be in contestant list");
             
-            await ContestETHOnlyMockInstance.connect(accountTwo).enter(stageID);
+            await ContestETHOnlyInstance.connect(accountTwo).enter(stageID);
             
             
-            await ContestETHOnlyMockInstance.connect(accountOne).vote(accountTwo.address, stageID);
+            await ContestETHOnlyInstance.connect(accountOne).vote(accountTwo.address, stageID);
             
             // pass time again. to revoke period
             await ethers.provider.send('evm_increaseTime', [100]);
             await ethers.provider.send('evm_mine');
             
-            await ContestETHOnlyMockInstance.connect(accountThree).enter(stageID);
+            await ContestETHOnlyInstance.connect(accountThree).enter(stageID);
             await expect(
-                ContestETHOnlyMockInstance.connect(accountFourth).vote(accountThree.address, stageID),
+                ContestETHOnlyInstance.connect(accountFourth).vote(accountThree.address, stageID),
             ).to.be.revertedWith("Stage is out of voting period");
         });
 
         it('should delegate to some1', async () => {
             
             // make some pledge to reach minimum
-            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
-            await ContestETHOnlyMockInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            await ContestETHOnlyInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
             
             // pass time.   to voting period
             await ethers.provider.send('evm_increaseTime', [100]);
             await ethers.provider.send('evm_mine');
             
-            await ContestETHOnlyMockInstance.connect(accountTwo).enter(stageID);
-            await ContestETHOnlyMockInstance.connect(accountOne).delegate(accountTwo.address, stageID);
+            await ContestETHOnlyInstance.connect(accountTwo).enter(stageID);
+            await ContestETHOnlyInstance.connect(accountOne).delegate(accountTwo.address, stageID);
         });    
 
         it('should revoke on revoking period', async () => {
             
-            const revokeFee = await ContestETHOnlyMockInstance.getRevokeFee();
+            const revokeFee = await ContestETHOnlyInstance.revokeFee();
             const accountFourthStartingBalance = await ethers.provider.getBalance(accountFourth.address);
             
             // make some pledge to reach minimum
-            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
-            let pledgeTxObj = await ContestETHOnlyMockInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            let pledgeTxObj = await ContestETHOnlyInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
             
             // pass time.   to revoking period
             await ethers.provider.send('evm_increaseTime', [200]);
             await ethers.provider.send('evm_mine');
             
             // make revoke 
-            let revokeTxObj = await ContestETHOnlyMockInstance.connect(accountFourth).revoke(stageID);
+            let revokeTxObj = await ContestETHOnlyInstance.connect(accountFourth).revoke(stageID);
             
             const accountFourthEndingBalance = await ethers.provider.getBalance(accountFourth.address);
 
@@ -267,12 +286,12 @@ describe("ContestETHOnly", function () {
 
         it('should revoke on voting period with gradually increased revoke penalty', async () => {
             
-            const revokeFee = await ContestETHOnlyMockInstance.getRevokeFee();
+            const revokeFee = await ContestETHOnlyInstance.revokeFee();
             const accountFourthStartingBalance = await ethers.provider.getBalance(accountFourth.address);
             
             // make some pledge to reach minimum
-            await ContestETHOnlyMockInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
-            let pledgeTxObj = await ContestETHOnlyMockInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            let pledgeTxObj = await ContestETHOnlyInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
             
             // pass time.   to voting period
             // 50 seconds since start voting period. and 2 seconds for blocks: "evm_increaseTime" and "evm_mine"
@@ -282,7 +301,7 @@ describe("ContestETHOnly", function () {
             let revokeFeeperSecond = revokeFee.div(HUNDRED); // 100 seconds is voting period
 
             // make revoke 
-            let revokeTxObj = await ContestETHOnlyMockInstance.connect(accountFourth).revoke(stageID);
+            let revokeTxObj = await ContestETHOnlyInstance.connect(accountFourth).revoke(stageID);
             
             const accountFourthEndingBalance = await ethers.provider.getBalance(accountFourth.address);
 
@@ -324,9 +343,8 @@ describe("ContestETHOnly", function () {
             // prices = [100000, 150000, 180000]; // (0.0010/0.0015/0.0018)  mul by 1e8. 0.001 means that for 1 eth got 1000 tokens    //_00000000
             // lastTime = parseInt(blockTime)+(8*timePeriod);
 
-            
-            ContestETHOnlyMockInstance = await ContestETHOnlyMockF.connect(owner).deploy();
-            await ContestETHOnlyMockInstance.connect(owner).init(
+            let contestFactory = await ContestFactoryFactory.connect(owner).deploy();
+            let tx = await contestFactory.connect(owner).produceETHOnly(
                 3, // stagesCount,
                 [NINE.mul(ONE_ETH),THREE.mul(ONE_ETH),THREE.mul(ONE_ETH)], // stagesMinAmount
                 100, // contestPeriodInSeconds,
@@ -335,10 +353,26 @@ describe("ContestETHOnly", function () {
                 [50,30,10], //percentForWinners,
                 [] // judges
             );
+
+            const rc = await tx.wait(); // 0ms, as tx is already confirmed
+            const event = rc.events.find(event => event.event === 'InstanceCreated');
+            const [instance,] = event.args;
+
+            ContestETHOnlyInstance = await ethers.getContractAt("ContestETHOnly",instance);   
+            // ContestETHOnlyInstance = await ContestETHOnlyF.connect(owner).deploy();
+            // await ContestETHOnlyInstance.connect(owner).init(
+            //     3, // stagesCount,
+            //     [NINE.mul(ONE_ETH),THREE.mul(ONE_ETH),THREE.mul(ONE_ETH)], // stagesMinAmount
+            //     100, // contestPeriodInSeconds,
+            //     100, // votePeriodInSeconds,
+            //     100, // revokePeriodInSeconds,
+            //     [50,30,10], //percentForWinners,
+            //     [] // judges
+            // );
         });
         it('shouldnt complete until stage have not ended yet', async () => {
              await expect(
-                ContestETHOnlyMockInstance.connect(owner).complete(stageID)
+                ContestETHOnlyInstance.connect(owner).complete(stageID)
             ).to.be.revertedWith("Last stage have not ended yet");
         }); 
         
@@ -501,20 +535,20 @@ describe("ContestETHOnly", function () {
             it(element.title, async () => {
                 // enter 
                 for (const acc of element.entered) {
-                    await ContestETHOnlyMockInstance.connect(acc).enter(stageID);
+                    await ContestETHOnlyInstance.connect(acc).enter(stageID);
                 };
 
                 var totalPledged = ZERO;
                 // make some pledge X ETH to reach minimum
                 for (const item of element.pledged) {
                     totalPledged = totalPledged.add(item[1]);
-                    await ContestETHOnlyMockInstance.connect(item[0]).pledgeETH(item[1], stageID, {value:item[1] });
+                    await ContestETHOnlyInstance.connect(item[0]).pledgeETH(item[1], stageID, {value:item[1] });
                 };
 
-                const stageAmount = await ContestETHOnlyMockInstance.getStageAmount(stageID);
+                const stageAmount = await ContestETHOnlyInstance.getStageAmount(stageID);
                 expect(totalPledged).to.be.eq(stageAmount);
                 
-                const stageNumberBefore = await ContestETHOnlyMockInstance.getStageNumber();
+                const stageNumberBefore = await ContestETHOnlyInstance.getStageNumber();
 
                 // pass time.   to voting period
                 await ethers.provider.send('evm_increaseTime', [100]);
@@ -522,11 +556,11 @@ describe("ContestETHOnly", function () {
 
                 //voting
                 for (const item of element.voting) {
-                    await ContestETHOnlyMockInstance.connect(item[0]).vote(item[1].address, stageID);
+                    await ContestETHOnlyInstance.connect(item[0]).vote(item[1].address, stageID);
                 };
                 //delegating
                 for (const item of element.delegating) {
-                    await ContestETHOnlyMockInstance.connect(item[0]).delegate(item[1].address, stageID);
+                    await ContestETHOnlyInstance.connect(item[0]).delegate(item[1].address, stageID);
                 };
 
                 // pass time.   to complete period
@@ -534,7 +568,7 @@ describe("ContestETHOnly", function () {
                 await ethers.provider.send('evm_mine');
 
                 // call complete by owner
-                await ContestETHOnlyMockInstance.connect(owner).complete(stageID);
+                await ContestETHOnlyInstance.connect(owner).complete(stageID);
 
                 //calculations
                 for (const item of element.claiming) {
@@ -542,12 +576,12 @@ describe("ContestETHOnly", function () {
                     if (typeof(item[2]) !== 'undefined') {
                         //catch Error
                         await expect(
-                            ContestETHOnlyMockInstance.connect(item[0]).claim(stageID)
+                            ContestETHOnlyInstance.connect(item[0]).claim(stageID)
                         ).to.be.revertedWith("Sender must be in contestant list");
                     } else {
                         let startingBalance = await ethers.provider.getBalance(item[0].address);
                                             
-                        let txObj = await ContestETHOnlyMockInstance.connect(item[0]).claim(stageID);
+                        let txObj = await ContestETHOnlyInstance.connect(item[0]).claim(stageID);
                         let tx = await txObj.wait();
 
                         let endingBalance = await ethers.provider.getBalance(item[0].address);
@@ -564,7 +598,7 @@ describe("ContestETHOnly", function () {
                 };
 
                 
-                const stageNumberAfter = await ContestETHOnlyMockInstance.getStageNumber();
+                const stageNumberAfter = await ContestETHOnlyInstance.getStageNumber();
                 
                 if ((typeof(element.checkStageSwitchNumber) !== 'undefined') && element.checkStageSwitchNumber == true) {
                     expect(stageNumberBefore.add(1)).to.be.eq(stageNumberAfter)
