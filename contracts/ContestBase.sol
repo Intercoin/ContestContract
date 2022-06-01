@@ -18,7 +18,7 @@ contract ContestBase is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
     // uint256 delegateFee = 5e4; // 5% mul at 1e6
     
     // penalty for revoke tokens
-    uint256 revokeFee; // 10% mul at 1e6
+    uint256 public revokeFee; // 10% mul at 1e6
     
     EnumerableSetUpgradeable.AddressSet private _judgesWhitelist;
     EnumerableSetUpgradeable.AddressSet private _personsList;
@@ -385,6 +385,14 @@ contract ContestBase is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         } else {
             res = false;
         }
+    }
+    
+    function getStageAmount( uint256 stageID) public view returns (uint256) {
+        return _contest._stages[stageID].amount;
+    }
+    
+    function getStageNumber() public view returns (uint256) {
+        return _contest.stage;
     }
 
     /**
