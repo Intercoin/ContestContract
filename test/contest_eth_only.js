@@ -3,6 +3,7 @@ const { BigNumber } = require('ethers');
 const { expect } = require('chai');
 const chai = require('chai');
 const { time } = require('@openzeppelin/test-helpers');
+const mixedCall = require('../js/mixedCall.js');
 
 const ZERO = BigNumber.from('0');
 const ONE = BigNumber.from('1');
@@ -42,7 +43,7 @@ describe("ContestETHOnly", function () {
     const accountNine = accounts[9];
     const accountTen = accounts[10];
     const accountEleven = accounts[11];
-    const accountTwelwe = accounts[12];
+    const trustedForwarder = accounts[12];
     
     // setup useful vars
     
@@ -331,9 +332,36 @@ describe("ContestETHOnly", function () {
             expect(actual).to.be.eq(expected);
             
         });  
+        describe("TrustedForwarder", function () {
+            it("should be empty after init", async() => {
+                expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(ZERO_ADDRESS)).to.be.true;
+            });
+
+            it("should be setup by owner", async() => {
+                await expect(ContestETHOnlyInstance.connect(accountOne).setTrustedForwarder(accountTwo.address)).to.be.revertedWith("Ownable: caller is not the owner");
+                expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(ZERO_ADDRESS)).to.be.true;
+                await ContestETHOnlyInstance.connect(owner).setTrustedForwarder(accountTwo.address);
+                expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(accountTwo.address)).to.be.true;
+            });
+            
+            it("should drop trusted forward if trusted forward become owner ", async() => {
+                await ContestETHOnlyInstance.connect(owner).setTrustedForwarder(accountTwo.address);
+                expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(accountTwo.address)).to.be.true;
+                await ContestETHOnlyInstance.connect(owner).transferOwnership(accountTwo.address);
+                expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(ZERO_ADDRESS)).to.be.true;
+            });
+
+            it("shouldnt become owner and trusted forwarder", async() => {
+                await expect(ContestETHOnlyInstance.connect(owner).setTrustedForwarder(owner.address)).to.be.revertedWith("FORWARDER_CAN_NOT_BE_OWNER");
+            });
+            
+        });
+        
     });
 
-    describe("Stage Workflow", function () {
+    for (const trustedForwardMode of [false,trustedForwarder]) {
+
+    describe(`${trustedForwardMode ? '[trusted forwarder]' : ''} Stage Workflow`, function () {
         beforeEach("deploying", async() => {
             stageID = 0;
             minAmountInStage = THREE.mul(ONE_ETH);
@@ -369,11 +397,13 @@ describe("ContestETHOnly", function () {
             //     [50,30,10], //percentForWinners,
             //     [] // judges
             // );
+
+            if (trustedForwardMode) {
+                await ContestETHOnlyInstance.connect(owner).setTrustedForwarder(trustedForwarder.address);
+            }
         });
         it('shouldnt complete until stage have not ended yet', async () => {
-             await expect(
-                ContestETHOnlyInstance.connect(owner).complete(stageID)
-            ).to.be.revertedWith("Last stage have not ended yet");
+            await mixedCall(ContestETHOnlyInstance, trustedForwardMode, owner, 'complete(uint256)', [stageID], "Last stage have not ended yet");
         }); 
         
 
@@ -535,14 +565,14 @@ describe("ContestETHOnly", function () {
             it(element.title, async () => {
                 // enter 
                 for (const acc of element.entered) {
-                    await ContestETHOnlyInstance.connect(acc).enter(stageID);
+                    await mixedCall(ContestETHOnlyInstance, trustedForwardMode, acc, 'enter(uint256)', [stageID]);
                 };
 
                 var totalPledged = ZERO;
                 // make some pledge X ETH to reach minimum
                 for (const item of element.pledged) {
                     totalPledged = totalPledged.add(item[1]);
-                    await ContestETHOnlyInstance.connect(item[0]).pledgeETH(item[1], stageID, {value:item[1] });
+                    await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'pledgeETH(uint256,uint256)', [item[1], stageID, {value:item[1] }]);
                 };
 
                 const stageAmount = await ContestETHOnlyInstance.getStageAmount(stageID);
@@ -556,11 +586,11 @@ describe("ContestETHOnly", function () {
 
                 //voting
                 for (const item of element.voting) {
-                    await ContestETHOnlyInstance.connect(item[0]).vote(item[1].address, stageID);
+                    await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'vote(address,uint256)', [item[1].address, stageID]);
                 };
                 //delegating
                 for (const item of element.delegating) {
-                    await ContestETHOnlyInstance.connect(item[0]).delegate(item[1].address, stageID);
+                    await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'delegate(address,uint256)', [item[1].address, stageID]);
                 };
 
                 // pass time.   to complete period
@@ -568,31 +598,34 @@ describe("ContestETHOnly", function () {
                 await ethers.provider.send('evm_mine');
 
                 // call complete by owner
-                await ContestETHOnlyInstance.connect(owner).complete(stageID);
+                await mixedCall(ContestETHOnlyInstance, trustedForwardMode, owner, 'complete(uint256)', [stageID]);
 
                 //calculations
                 for (const item of element.claiming) {
 
                     if (typeof(item[2]) !== 'undefined') {
                         //catch Error
-                        await expect(
-                            ContestETHOnlyInstance.connect(item[0]).claim(stageID)
-                        ).to.be.revertedWith("Sender must be in contestant list");
+                        await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'claim(uint256)', [stageID], "Sender must be in contestant list");
                     } else {
                         let startingBalance = await ethers.provider.getBalance(item[0].address);
                                             
-                        let txObj = await ContestETHOnlyInstance.connect(item[0]).claim(stageID);
+                        let txObj = await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'claim(uint256)', [stageID]);
                         let tx = await txObj.wait();
 
                         let endingBalance = await ethers.provider.getBalance(item[0].address);
-
                         //reward
                         expect(
                             totalPledged.mul(item[1]).div(100).div(element.claimingDenominator)
                         ).to.be.eq(
-                            endingBalance.sub(startingBalance).add(
-                                ONE.mul(tx.gasUsed).mul(tx.effectiveGasPrice)
+                            (trustedForwardMode === false) ? (
+                                endingBalance.sub(startingBalance).add(
+                                    ONE.mul(tx.gasUsed).mul(tx.effectiveGasPrice)
+                                )
+                            ):(
+                                // via transfer forwarder calls fee payed by forwarder
+                                endingBalance.sub(startingBalance)
                             )
+                            
                         )
                     }
                 };
@@ -608,4 +641,5 @@ describe("ContestETHOnly", function () {
 
         });
     }); 
+    }
 }); 
