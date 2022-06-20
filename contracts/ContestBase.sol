@@ -3,11 +3,12 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+//import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "./access/TrustedForwarder.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./IntercoinTrait.sol";
 
-contract ContestBase is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, IntercoinTrait {
+contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradeable, IntercoinTrait {
     
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
@@ -334,7 +335,7 @@ contract ContestBase is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         internal 
         onlyInitializing 
     {
-        __Ownable_init();
+        __TrustedForwarder_init();
         __ReentrancyGuard_init();
     
         revokeFee = 10e4;
