@@ -4,12 +4,13 @@ pragma solidity ^0.8.0;
 import "./ContestBase.sol";
 
 contract ContestETHOnly is ContestBase {
-    
+
+    error SentEthDoesNotEqualWithAmount();
     /**
      * Recieved ether and transfer token to sender
      */
     receive() external payable {
-        require(true == false, "Method does not support. Send ETH with pledgeETH() method");
+        revert MethodDoesNotSupported(); // "Method does not support. Send ETH with pledgeETH() method"
     }
     
     /**
@@ -60,7 +61,10 @@ contract ContestETHOnly is ContestBase {
      * @param stageID Stage number
      */
     function pledgeETH(uint256 amount, uint256 stageID) public payable nonReentrant() {
-        require (msg.value == amount, "Sent ETH does not equal with amount");
+        if (msg.value != amount) {
+            revert SentEthDoesNotEqualWithAmount(); // "Sent ETH does not equal with amount"
+        }
+        
         _pledge(msg.value, stageID);
     }
     

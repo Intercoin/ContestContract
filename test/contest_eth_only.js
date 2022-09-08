@@ -146,7 +146,7 @@ describe("ContestETHOnly", function () {
                     to: ContestETHOnlyInstance.address, 
                     value: amountETHSendToContract
                 })
-            ).to.be.revertedWith("Method does not support. Send ETH with pledgeETH() method");
+            ).to.be.revertedWith("MethodDoesNotSupported()");
             
         });
 
@@ -155,7 +155,7 @@ describe("ContestETHOnly", function () {
             // revert if trying to double enter
             await expect(
                 ContestETHOnlyInstance.connect(accountOne).enter(stageID)
-            ).to.be.revertedWith("Sender must not be in contestant list");
+            ).to.be.revertedWith(`MustNotBeInContestantList(${stageID}, "${accountOne.address}")`);
         });
         
         it('should leave in active stage if entered before', async () => {
@@ -164,7 +164,7 @@ describe("ContestETHOnly", function () {
             // revert if trying to double leave
             await expect(
                 ContestETHOnlyInstance.connect(accountOne).leave(stageID)
-            ).to.be.revertedWith("Sender must be in contestant list");
+            ).to.be.revertedWith(`MustBeInContestantList(${stageID}, "${accountOne.address}")`);
         });
 
         it('should prevent pledge if entered before', async () => {
@@ -172,7 +172,7 @@ describe("ContestETHOnly", function () {
             // revert if trying to double enter
             await expect(
                 ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH}),
-            ).to.be.revertedWith("Sender must not be in contestant list");
+            ).to.be.revertedWith(`MustNotBeInContestantList(${stageID}, "${accountOne.address}")`);
         });
 
         it('should pledge before and during contestPeriod', async () => {
@@ -194,7 +194,7 @@ describe("ContestETHOnly", function () {
             // try to pledge again
             await expect(
                 ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH })
-            ).to.be.revertedWith("Stage is out of contest period");
+            ).to.be.revertedWith(`StageIsOutOfContestPeriod(${stageID})`);
             
             // pass another 10 seconds. to revoke period
             await ethers.provider.send('evm_increaseTime', [100]);
@@ -203,7 +203,7 @@ describe("ContestETHOnly", function () {
             // try to pledge again
             await expect(
                 ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH })
-            ).to.be.revertedWith("Stage is out of contest period");
+            ).to.be.revertedWith(`StageIsOutOfContestPeriod(${stageID})`);
         });
 
         it('should prevent double vote ', async () => {
@@ -217,7 +217,7 @@ describe("ContestETHOnly", function () {
             await ContestETHOnlyInstance.connect(accountOne).vote(accountTwo.address, stageID);
             await expect(
                 ContestETHOnlyInstance.connect(accountOne).vote(accountTwo.address, stageID)
-            ).to.be.revertedWith("must have not voted or delegated before");
+            ).to.be.revertedWith(`PersonMustHaveNotVotedOrDelegatedBefore("${accountOne.address}", ${stageID})`);
         });
 
         it('should prevent vote outside of voting period', async () => {
@@ -228,7 +228,7 @@ describe("ContestETHOnly", function () {
             
             await expect(
                 ContestETHOnlyInstance.connect(accountOne).vote(accountTwo.address, stageID)
-            ).to.be.revertedWith("Stage is out of voting period");
+            ).to.be.revertedWith(`StageIsOutOfVotingPeriod(${stageID})`);
             
             // pass time.   to voting period
             await ethers.provider.send('evm_increaseTime', [100]);
@@ -236,7 +236,7 @@ describe("ContestETHOnly", function () {
             
             await expect(
                 ContestETHOnlyInstance.connect(accountOne).vote(accountTwo.address, stageID)
-            ).to.be.revertedWith("contestantAddress must be in contestant list");
+            ).to.be.revertedWith(`MustBeInContestantList(${stageID}, "${accountTwo.address}")`);
             
             await ContestETHOnlyInstance.connect(accountTwo).enter(stageID);
             
@@ -250,7 +250,7 @@ describe("ContestETHOnly", function () {
             await ContestETHOnlyInstance.connect(accountThree).enter(stageID);
             await expect(
                 ContestETHOnlyInstance.connect(accountFourth).vote(accountThree.address, stageID),
-            ).to.be.revertedWith("Stage is out of voting period");
+            ).to.be.revertedWith(`StageIsOutOfVotingPeriod(${stageID})`);
         });
 
         it('should delegate to some1', async () => {
@@ -379,7 +379,7 @@ describe("ContestETHOnly", function () {
             });
 
             it("shouldnt become owner and trusted forwarder", async() => {
-                await expect(ContestETHOnlyInstance.connect(owner).setTrustedForwarder(owner.address)).to.be.revertedWith("FORWARDER_CAN_NOT_BE_OWNER");
+                await expect(ContestETHOnlyInstance.connect(owner).setTrustedForwarder(owner.address)).to.be.revertedWith("ForwarderCanNotBeOwner()");
             });
             
         });
@@ -455,7 +455,7 @@ describe("ContestETHOnly", function () {
             }
         });
         it('shouldnt complete until stage have not ended yet', async () => {
-            await mixedCall(ContestETHOnlyInstance, trustedForwardMode, owner, 'complete(uint256)', [stageID], "Last stage have not ended yet");
+            await mixedCall(ContestETHOnlyInstance, trustedForwardMode, owner, 'complete(uint256)', [stageID], `StageHaveNotEndedYet(${stageID})`);
         }); 
         
 
@@ -571,11 +571,11 @@ describe("ContestETHOnly", function () {
                 voting:[],
                 delegating:[],
                 claiming: [
-                    [accountFive,   50, "Sender must be in contestant list"],
-                    [accountSix,    30, "Sender must be in contestant list"],
-                    [accountSeven,  10, "Sender must be in contestant list"],
-                    [accountEight,  5, "Sender must be in contestant list"],
-                    [accountNine,   5, "Sender must be in contestant list"],
+                    [accountFive,   50, `MustBeInContestantList(0, "${accountFive.address}")`],
+                    [accountSix,    30, `MustBeInContestantList(0, "${accountSix.address}")`],
+                    [accountSeven,  10, `MustBeInContestantList(0, "${accountSeven.address}")`],
+                    [accountEight,  5, `MustBeInContestantList(0, "${accountEight.address}")`],
+                    [accountNine,   5, `MustBeInContestantList(0, "${accountNine.address}")`],
                 ],
                 claimingDenominator:1,
                 checkStageSwitchNumber: true
@@ -657,7 +657,7 @@ describe("ContestETHOnly", function () {
 
                     if (typeof(item[2]) !== 'undefined') {
                         //catch Error
-                        await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'claim(uint256)', [stageID], "Sender must be in contestant list");
+                        await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'claim(uint256)', [stageID], `MustBeInContestantList(${stageID}, "${item[0].address}")`);
                     } else {
                         let startingBalance = await ethers.provider.getBalance(item[0].address);
                                             

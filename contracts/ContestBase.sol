@@ -100,6 +100,23 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
     event StageCompleted(uint256 indexed stageID);
     
     error PersonMustHaveNotVotedOrDelegatedBefore(address account, uint256 stageID);
+    error JudgeHaveBeenAlreadyDelegated(address account, uint256 stageID);
+    error StageHaveStillInGatheringMode(uint256 stageID);
+    error StageHaveNotCompletedYet(uint256 stageID);
+    error StageIsOutOfContestPeriod(uint256 stageID);
+    error StageIsOutOfVotingPeriod(uint256 stageID);
+    error StageIsOutOfRevokeOrVotePeriod(uint256 stageID);
+    error StageHaveNotCompletedOrSenderHasAlreadyClaimedOrRevoked(uint256 stageID);
+    error MustBeInContestantList(uint256 stageID, address account);
+    error MustNotBeInContestantList(uint256 stageID, address account);
+    error MustBeInPledgesList(uint256 stageID, address account);
+    error MustNotBeInPledgesList(uint256 stageID, address account);
+    error MustBeInJudgesList(uint256 stageID, address account);
+    error MustNotBeInJudgesList(uint256 stageID, address account);
+    error MustBeInPledgesOrJudgesList(uint256 stageID, address account);
+    error StageHaveNotEndedYet(uint256 stageID);
+    error MethodDoesNotSupported();
+    
 	////
 	// modifiers section
 	////
@@ -122,10 +139,10 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier judgeNotDelegatedBefore(address account, uint256 stageID) {
-         require(
-             (_contest._stages[stageID].participants[account].delegated == false), 
-            "Judge has been already delegated"
-        );
+        Participant storage participant = _contest._stages[stageID].participants[account];
+        if (participant.delegated) {
+            revert JudgeHaveBeenAlreadyDelegated(account, stageID);
+        }
         _;
     }
     
@@ -133,10 +150,10 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier stageActive(uint256 stageID) {
-        require(
-            (_contest._stages[stageID].active == true), 
-            "Stage have still in gathering mode"
-        );
+        Stage storage stage = _contest._stages[stageID];
+        if (stage.active) {
+            revert StageHaveStillInGatheringMode(stageID);
+        }
         _;
     }
     
@@ -144,29 +161,22 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier stageNotCompleted(uint256 stageID) {
-        require(
-            (_contest._stages[stageID].completed == false), 
-            "Stage have not completed yet"
-        );
+        Stage storage stage = _contest._stages[stageID];
+        if (stage.completed) {
+            revert StageHaveNotCompletedYet(stageID);
+        }
         _;
     }
-    
+
     /**
      * @param stageID Stage number
      */
     modifier canPledge(uint256 stageID) {
-        uint256 endContestTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod);
-        require(
-            (
-                (
-                    _contest._stages[stageID].active == false
-                ) || 
-                (
-                    (_contest._stages[stageID].active == true) && (endContestTimestamp > block.timestamp)
-                )
-            ), 
-            "Stage is out of contest period"
-        );
+        Stage storage stage = _contest._stages[stageID];
+        uint256 endContestTimestamp = (stage.startTimestampUtc).add(stage.contestPeriod);
+        if ((stage.active == true) && (endContestTimestamp <= block.timestamp)) {
+            revert StageIsOutOfContestPeriod(stageID);
+        }
         _;
     }
     
@@ -174,16 +184,16 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier canDelegateAndVote(uint256 stageID) {
-        uint256 endContestTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod);
-        uint256 endVoteTimestamp = endContestTimestamp.add(_contest._stages[stageID].votePeriod);
-        require(
-            (
-                (_contest._stages[stageID].active == true) && 
-                (endVoteTimestamp > block.timestamp) && 
-                (block.timestamp >= endContestTimestamp)
-            ), 
-            "Stage is out of voting period"
-        );
+        Stage storage stage = _contest._stages[stageID];
+        uint256 endContestTimestamp = (stage.startTimestampUtc).add(stage.contestPeriod);
+        uint256 endVoteTimestamp = endContestTimestamp.add(stage.votePeriod);
+        if (
+            (stage.active == false) ||
+            (endVoteTimestamp <= block.timestamp) ||
+            (block.timestamp < endContestTimestamp)
+        ) {
+            revert StageIsOutOfVotingPeriod(stageID);
+        }
         _;
     }
     
@@ -191,18 +201,19 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier canRevoke(uint256 stageID) {
-        uint256 endContestTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod);
-        uint256 endVoteTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod).add(_contest._stages[stageID].votePeriod);
-        uint256 endRevokeTimestamp = _contest._stages[stageID].endTimestampUtc;
+        Stage storage stage = _contest._stages[stageID];
+
+        uint256 endContestTimestamp = (stage.startTimestampUtc).add(stage.contestPeriod);
+        uint256 endVoteTimestamp = (stage.startTimestampUtc).add(stage.contestPeriod).add(stage.votePeriod);
+        uint256 endRevokeTimestamp = stage.endTimestampUtc;
         
-        require(
-            (
-                (
-                    (_contest._stages[stageID].active == true) && (endRevokeTimestamp > block.timestamp) && (block.timestamp >= endContestTimestamp)
-                )
-            ), 
-            "Stage is out of revoke or vote period"
-        );
+        if (
+            (stage.active == false) || 
+            (endRevokeTimestamp <= block.timestamp) || 
+            (block.timestamp < endContestTimestamp)
+        ) {
+            revert StageIsOutOfRevokeOrVotePeriod(stageID);
+        }
         _;
     }
     
@@ -210,19 +221,19 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier canClaim(uint256 stageID) {
-        uint256 endTimestampUtc = _contest._stages[stageID].endTimestampUtc;
-        require(
-            (
-                (
-                    (_contest._stages[stageID].participants[_msgSender()].revoked == false) && 
-                    (_contest._stages[stageID].participants[_msgSender()].claimed == false) && 
-                    (_contest._stages[stageID].completed == true) && 
-                    (_contest._stages[stageID].active == true) && 
-                    (block.timestamp > endTimestampUtc)
-                )
-            ), 
-            "Stage have not completed or sender has already claimed or revoked"
-        );
+        Stage storage stage = _contest._stages[stageID];
+        address sender = _msgSender();
+        uint256 endTimestampUtc = stage.endTimestampUtc;
+        
+        if (
+            (stage.participants[_msgSender()].revoked) ||
+            (stage.participants[_msgSender()].claimed) ||
+            (stage.completed == false) && 
+            (stage.active == false) && 
+            (block.timestamp <= endTimestampUtc)
+        ) {
+            revert StageHaveNotCompletedOrSenderHasAlreadyClaimedOrRevoked(stageID);
+        }
         _;
     }
     
@@ -230,10 +241,9 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier inContestsList(uint256 stageID) {
-        require(
-             (_contest._stages[stageID].contestsList.contains(_msgSender())), 
-            "Sender must be in contestant list"
-        );
+        if (_contest._stages[stageID].contestsList.contains(_msgSender()) == false) {
+            revert MustBeInContestantList(stageID, _msgSender());
+        }
         _;
     }
     
@@ -241,10 +251,9 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier notInContestsList(uint256 stageID) {
-        require(
-             (!_contest._stages[stageID].contestsList.contains(_msgSender())), 
-            "Sender must not be in contestant list"
-        );
+        if (_contest._stages[stageID].contestsList.contains(_msgSender())) {
+            revert MustNotBeInContestantList(stageID, _msgSender());
+        }
         _;
     }
     
@@ -252,10 +261,9 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier inPledgesList(uint256 stageID) {
-        require(
-             (_contest._stages[stageID].pledgesList.contains(_msgSender())), 
-            "Sender must be in pledge list"
-        );
+        if (_contest._stages[stageID].pledgesList.contains(_msgSender()) == false) {
+            revert MustBeInPledgesList(stageID, _msgSender());
+        }
         _;
     }
     
@@ -263,10 +271,9 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier notInPledgesList(uint256 stageID) {
-        require(
-             (!_contest._stages[stageID].pledgesList.contains(_msgSender())), 
-            "Sender must not be in pledge list"
-        );
+        if (_contest._stages[stageID].pledgesList.contains(_msgSender())) {
+            revert MustNotBeInPledgesList(stageID, _msgSender());
+        }
         _;
     }
     
@@ -274,10 +281,9 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier inJudgesList(uint256 stageID) {
-        require(
-             (_contest._stages[stageID].judgesList.contains(_msgSender())), 
-            "Sender must be in judges list"
-        );
+        if (_contest._stages[stageID].judgesList.contains(_msgSender()) == false) {
+            revert MustBeInJudgesList(stageID, _msgSender());
+        }
         _;
     }
     
@@ -285,10 +291,9 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier notInJudgesList(uint256 stageID) {
-        require(
-             (!_contest._stages[stageID].judgesList.contains(_msgSender())), 
-            "Sender must not be in judges list"
-        );
+        if (_contest._stages[stageID].judgesList.contains(_msgSender())) {
+            revert MustNotBeInJudgesList(stageID, _msgSender());
+        }
         _;
     }
     
@@ -296,14 +301,14 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */        
     modifier inPledgesOrJudgesList(uint256 stageID) {
-        require(
-             (
-                 _contest._stages[stageID].pledgesList.contains(_msgSender()) ||
-                 _contest._stages[stageID].judgesList.contains(_msgSender())
-             )
-             , 
-            "Sender must be in pledges or judges list"
-        );
+        Stage storage stage = _contest._stages[stageID];
+
+        if (
+            stage.pledgesList.contains(_msgSender()) == false &&
+            stage.judgesList.contains(_msgSender()) == false
+        ) {
+            revert MustBeInPledgesOrJudgesList(stageID, _msgSender());
+        }
         _;
     }  
     
@@ -311,14 +316,14 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
      * @param stageID Stage number
      */
     modifier canCompleted(uint256 stageID) {
-         require(
-            (
-                (_contest._stages[stageID].completed == false) &&
-                (_contest._stages[stageID].active == true) &&
-                (_contest._stages[stageID].endTimestampUtc < block.timestamp)
-            ), 
-            string("Last stage have not ended yet")
-        );
+        Stage storage stage = _contest._stages[stageID];
+        if (
+            (stage.completed == true) ||
+            (stage.active == false) ||
+            (stage.endTimestampUtc >= block.timestamp)
+        ) {
+            revert StageHaveNotEndedYet(stageID);
+        }
         _;
     }
     ////
@@ -595,14 +600,14 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
         internal 
         canDelegateAndVote(stageID)
     {
-        
+        Stage storage stage = _contest._stages[stageID];
         // code left for possibility re-delegate
         // if (_contests[contestID]._stages[stageID].participants[_msgSender()].delegated == true) {
         //     _revoke(stageID);
         // }
-        _contest._stages[stageID].participants[_msgSender()].delegated = true;
-        _contest._stages[stageID].participants[_msgSender()].delegateTo = judge;
-        _contest._stages[stageID].participants[judge].delegatedBy.add(_msgSender());
+        stage.participants[_msgSender()].delegated = true;
+        stage.participants[_msgSender()].delegateTo = judge;
+        stage.participants[judge].delegatedBy.add(_msgSender());
     }
     
     /** 
@@ -615,11 +620,10 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
     ) 
         internal
     {
-           
-        require(
-            _contest._stages[stageID].contestsList.contains(contestantAddress), 
-            "contestantAddress must be in contestant list"
-        );
+        Stage storage stage = _contest._stages[stageID];
+        if (stage.contestsList.contains(contestantAddress) == false) {
+            revert MustBeInContestantList(stageID, contestantAddress);
+        }
      
         // code left for possibility re-vote
         // if (_contests[contestID]._stages[stageID].participants[_msgSender()].voted == true) {
@@ -627,9 +631,9 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
         // }
         //----
         
-        _contest._stages[stageID].participants[_msgSender()].voted = true;
-        _contest._stages[stageID].participants[_msgSender()].voteTo = contestantAddress;
-        _contest._stages[stageID].participants[contestantAddress].votedBy.add(_msgSender());
+        stage.participants[_msgSender()].voted = true;
+        stage.participants[_msgSender()].voteTo = contestantAddress;
+        stage.participants[contestantAddress].votedBy.add(_msgSender());
     }
     
     /**
@@ -831,7 +835,8 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
         return TrustedForwarder._msgSender();
         
     }
-
+error ForwarderCanNotBeOwner();
+error DeniedForForwarder();
     function setTrustedForwarder(
         address forwarder
     ) 
@@ -840,7 +845,9 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
         override
         onlyOwner 
     {
-        require(owner() != forwarder, "FORWARDER_CAN_NOT_BE_OWNER");
+        if (owner() == forwarder) {
+            revert ForwarderCanNotBeOwner();
+        }
         _setTrustedForwarder(forwarder);
     }
 
@@ -851,7 +858,9 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
         override 
         onlyOwner 
     {
-        require(_isTrustedForwarder(msg.sender) == false, "DENIED_FOR_FORWARDER");
+        if (_isTrustedForwarder(msg.sender)) {
+            revert DeniedForForwarder();
+        }
         if (_isTrustedForwarder(newOwner)) {
             _setTrustedForwarder(address(0));
         }

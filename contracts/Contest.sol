@@ -112,9 +112,10 @@ contract Contest is ContestBase {
         
     
     receive() external payable {
-        revert("Method does not support.");
+        revert MethodDoesNotSupported();
     }
     
+    error AmountExceedsAllowedBalance(uint256 stageID, uint256 amount);
     
     /**
      * pledge(amount) can be used to send external token into the contract, and issue internal token balance
@@ -123,13 +124,11 @@ contract Contest is ContestBase {
      */
     function pledge(uint256 amount, uint256 stageID) public virtual override nonReentrant() {
         uint256 _allowedAmount = IERC20Upgradeable(token).allowance(_msgSender(), address(this));
-        require(
-            (
-                (amount <= _allowedAmount) ||
-                (_allowedAmount > 0)
-            ), 
-            "Amount exceeds allowed balance");
 
+        if (amount > _allowedAmount) {
+            revert AmountExceedsAllowedBalance(stageID, amount);
+        }
+        
         // try to get
         bool success = IERC20Upgradeable(token).transferFrom(_msgSender(), address(this), _allowedAmount);
         require(success == true, "Transfer tokens were failed"); 
