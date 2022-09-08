@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
-//import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "./access/TrustedForwarder.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "releasemanager/contracts/CostManagerHelperERC2771Support.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "./IntercoinTrait.sol";
 
-contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradeable, IntercoinTrait {
+
+contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHelperERC2771Support, OwnableUpgradeable {
     
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
@@ -18,6 +18,20 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
     // delegateFee (some constant in contract) which is percent of amount. They can delegate their entire amount of vote to the judge, or some.
     // uint256 delegateFee = 5e4; // 5% mul at 1e6
     
+    uint8 internal constant OPERATION_SHIFT_BITS = 240;  // 256 - 16
+    // Constants representing operations
+    uint8 internal constant OPERATION_INITIALIZE = 0x0;
+    uint8 internal constant OPERATION_INITIALIZE_ETH_ONLY = 0x1;
+    uint8 internal constant OPERATION_CLAIM = 0x2;
+    uint8 internal constant OPERATION_COMPLETE = 0x3;
+    uint8 internal constant OPERATION_DELEGATE = 0x4;
+    uint8 internal constant OPERATION_ENTER = 0x5;
+    uint8 internal constant OPERATION_LEAVE = 0x6;
+    uint8 internal constant OPERATION_VOTE = 0x7;
+    uint8 internal constant OPERATION_PLEDGE = 0x8;
+    uint8 internal constant OPERATION_REVOKE = 0x9;
+    
+
     // penalty for revoke tokens
     uint256 public revokeFee; // 10% mul at 1e6
     
@@ -321,7 +335,8 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
      * @param revokePeriodInSeconds duration in seconds  for revoking period
      * @param percentForWinners array of values in percentages of overall amount that will gain winners 
      * @param judges array of judges' addresses. if empty than everyone can vote
-     * 
+     * @param costManager address of costManager
+     
      */
     function __ContestBase__init(
         uint256 stagesCount,
@@ -330,12 +345,16 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
         uint256 votePeriodInSeconds,
         uint256 revokePeriodInSeconds,
         uint256[] memory percentForWinners,
-        address[] memory judges
+        address[] memory judges,
+        address costManager
     ) 
         internal 
         onlyInitializing 
     {
-        __TrustedForwarder_init();
+        __CostManagerHelper_init(_msgSender());
+        _setCostManager(costManager);
+
+        __Ownable_init();
         __ReentrancyGuard_init();
     
         revokeFee = 10e4;
@@ -419,6 +438,12 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
         judgeNotDelegatedBefore(judge, stageID)
     {
         _delegate(judge, stageID);
+
+        _accountForOperation(
+            (OPERATION_DELEGATE << OPERATION_SHIFT_BITS) | stageID,
+            uint256(uint160(_msgSender())),
+            uint256(uint160(judge))
+        );
     }
     
     /** 
@@ -436,6 +461,12 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
         canDelegateAndVote(stageID)
     {
         _vote(contestantAddress, stageID);
+        
+        _accountForOperation(
+            (OPERATION_VOTE << OPERATION_SHIFT_BITS) | stageID,
+            uint256(uint160(_msgSender())),
+            uint256(uint160(contestantAddress))
+        );
     }
     
     /**
@@ -451,6 +482,13 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
         _contest._stages[stageID].participants[_msgSender()].claimed = true;
         uint prizeAmount = _contest._stages[stageID].participants[_msgSender()].balanceAfter;
         _claimAfter(prizeAmount);
+
+        
+        _accountForOperation(
+            (OPERATION_CLAIM << OPERATION_SHIFT_BITS) | stageID,
+            uint256(uint160(_msgSender())),
+            0
+        );
     }
     
     /**
@@ -466,6 +504,12 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
         public 
     {
         _enter(stageID);
+        
+        _accountForOperation(
+            (OPERATION_ENTER << OPERATION_SHIFT_BITS) | stageID,
+            uint256(uint160(_msgSender())),
+            0
+        );
     }
     
     /**
@@ -477,6 +521,12 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
         public 
     {
         _leave(stageID);
+
+        _accountForOperation(
+            (OPERATION_LEAVE << OPERATION_SHIFT_BITS) | stageID,
+            uint256(uint160(_msgSender())),
+            0
+        );
     }
     
     /**
@@ -498,6 +548,12 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
         uint revokedBalance = _contest._stages[stageID].participants[_msgSender()].balance;
         _contest._stages[stageID].amount = _contest._stages[stageID].amount.sub(revokedBalance);
         revokeAfter(revokedBalance.sub(revokedBalance.mul(_calculateRevokeFee(stageID)).div(1e6)));
+        
+        _accountForOperation(
+            (OPERATION_REVOKE << OPERATION_SHIFT_BITS) | stageID,
+            uint256(uint160(_msgSender())),
+            0
+        );
     } 
 
     ////
@@ -668,6 +724,11 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
             // increment stage
             _contest.stage = (_contest.stage).add(1);
         }
+        _accountForOperation(
+            (OPERATION_COMPLETE << OPERATION_SHIFT_BITS) | stageID,
+            uint256(uint160(_msgSender())),
+            0
+        );
 	}
 	
 	/**
@@ -698,6 +759,11 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
         
         _turnStageToActive(stageID);
 
+        _accountForOperation(
+            (OPERATION_PLEDGE << OPERATION_SHIFT_BITS) | stageID,
+            uint256(uint160(_msgSender())),
+            0
+        );
     }
     
     /**
@@ -714,6 +780,12 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
         _turnStageToActive(stageID);
         _createParticipant(stageID);
         _contest._stages[stageID].contestsList.add(_msgSender());
+
+        _accountForOperation(
+            (OPERATION_ENTER << OPERATION_SHIFT_BITS) | stageID,
+            uint256(uint160(_msgSender())),
+            0
+        );
     }
     
     /**
@@ -727,6 +799,12 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
     {
         _contest._stages[stageID].contestsList.remove(_msgSender());
         _contest._stages[stageID].participants[msg.sender].active = false;
+
+        _accountForOperation(
+            (OPERATION_LEAVE << OPERATION_SHIFT_BITS) | stageID,
+            uint256(uint160(_msgSender())),
+            0
+        );
     }
     
     /**
@@ -741,6 +819,45 @@ contract ContestBase is Initializable, TrustedForwarder, ReentrancyGuardUpgradea
             _contest._stages[stageID].participants[_msgSender()].active = true;
         }
     }
+
+    function _msgSender(
+    ) 
+        internal 
+        view 
+        virtual
+        override(TrustedForwarder, ContextUpgradeable)
+        returns (address signer) 
+    {
+        return TrustedForwarder._msgSender();
+        
+    }
+
+    function setTrustedForwarder(
+        address forwarder
+    ) 
+        public 
+        virtual
+        override
+        onlyOwner 
+    {
+        require(owner() != forwarder, "FORWARDER_CAN_NOT_BE_OWNER");
+        _setTrustedForwarder(address(0));
+    }
+    function transferOwnership(
+        address newOwner
+    ) public 
+        virtual 
+        override 
+        onlyOwner 
+    {
+        require(_isTrustedForwarder(msg.sender) != false, "DENIED_FOR_FORWARDER");
+        if (_isTrustedForwarder(newOwner)) {
+            _setTrustedForwarder(address(0));
+        }
+        super.transferOwnership(newOwner);
+        
+    }
+
     
 	////
 	// private section

@@ -20,7 +20,8 @@ contract ContestETHOnly is ContestBase {
      * @param revokePeriodInSeconds duration in seconds  for revoking period
      * @param percentForWinners array of values in percentages of overall amount that will gain winners 
      * @param judges array of judges' addresses. if empty than everyone can vote
-     * 
+     * @param costManager address of costManager
+     * @param producedBy who produсed contract address
      */
     function init(
         uint256 stagesCount,
@@ -29,7 +30,9 @@ contract ContestETHOnly is ContestBase {
         uint256 votePeriodInSeconds,
         uint256 revokePeriodInSeconds,
         uint256[] memory percentForWinners,
-        address[] memory judges
+        address[] memory judges,
+        address costManager,
+        address producedBy
     ) 
         public 
         initializer 
@@ -41,7 +44,13 @@ contract ContestETHOnly is ContestBase {
             votePeriodInSeconds,
             revokePeriodInSeconds,
             percentForWinners,
-            judges
+            judges,
+            costManager
+        );
+        _accountForOperation(
+            OPERATION_INITIALIZE_ETH_ONLY << OPERATION_SHIFT_BITS,
+            uint256(uint160(producedBy)),
+            0
         );
     }
     
