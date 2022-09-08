@@ -99,21 +99,21 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
     event StageStartAnnounced(uint256 indexed stageID);
     event StageCompleted(uint256 indexed stageID);
     
-    
+    error PersonMustHaveNotVotedOrDelegatedBefore(address account, uint256 stageID);
 	////
 	// modifiers section
 	////
-	
+// not (A or B) = (not A) and (not B)
+// not (A and B) = (not A) or (not B)
     /**
      * @param account address
      * @param stageID Stage number
      */
     modifier onlyNotVotedNotDelegated(address account, uint256 stageID) {
-         require(
-             (_contest._stages[stageID].participants[account].voted == false) && 
-             (_contest._stages[stageID].participants[account].delegated == false), 
-            "Person must have not voted or delegated before"
-        );
+        Participant storage participant = _contest._stages[stageID].participants[account];
+        if (participant.voted || participant.delegated) {
+            revert PersonMustHaveNotVotedOrDelegatedBefore(account, stageID);
+        }
         _;
     }
     
@@ -841,8 +841,9 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
         onlyOwner 
     {
         require(owner() != forwarder, "FORWARDER_CAN_NOT_BE_OWNER");
-        _setTrustedForwarder(address(0));
+        _setTrustedForwarder(forwarder);
     }
+
     function transferOwnership(
         address newOwner
     ) public 
@@ -850,7 +851,7 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
         override 
         onlyOwner 
     {
-        require(_isTrustedForwarder(msg.sender) != false, "DENIED_FOR_FORWARDER");
+        require(_isTrustedForwarder(msg.sender) == false, "DENIED_FOR_FORWARDER");
         if (_isTrustedForwarder(newOwner)) {
             _setTrustedForwarder(address(0));
         }

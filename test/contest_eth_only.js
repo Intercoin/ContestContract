@@ -26,6 +26,7 @@ const ONE_ETH = ethers.utils.parseEther('1');
 //const TOTALSUPPLY = ethers.utils.parseEther('1000000000');    
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
+const NO_COSTMANAGER = ZERO_ADDRESS;
 
 describe("ContestETHOnly", function () {
     const accounts = waffle.provider.getWallets();
@@ -51,6 +52,9 @@ describe("ContestETHOnly", function () {
     var ContestFactoryFactory;
     
     var ContestETHOnlyInstance;
+    var ReleaseManagerFactoryF;
+    var ReleaseManagerF;
+
     var stageID;
     var snapId;
     var  minAmountInStage;
@@ -61,7 +65,8 @@ describe("ContestETHOnly", function () {
 
         ContestETHOnlyF = await ethers.getContractFactory("ContestETHOnly");
         ContestFactoryFactory = await ethers.getContractFactory("ContestFactory");
-           
+        ReleaseManagerFactoryF= await ethers.getContractFactory("MockReleaseManagerFactory")
+        ReleaseManagerF = await ethers.getContractFactory("MockReleaseManager");
         //console.log(`beforeEach("deploying"`);
     });
 
@@ -74,6 +79,16 @@ describe("ContestETHOnly", function () {
 
     describe("Simple tests", function () {
         beforeEach("deploying", async() => {
+            let implementationReleaseManager    = await ReleaseManagerF.deploy();
+            let releaseManagerFactory   = await ReleaseManagerFactoryF.connect(owner).deploy(implementationReleaseManager.address);
+            let tx,rc,event,instance,instancesCount;
+            //
+            tx = await releaseManagerFactory.connect(owner).produce();
+            rc = await tx.wait(); // 0ms, as tx is already confirmed
+            event = rc.events.find(event => event.event === 'InstanceProduced');
+            [instance, instancesCount] = event.args;
+            let releaseManager = await ethers.getContractAt("MockReleaseManager",instance);
+
             stageID = 0;
             minAmountInStage = THREE.mul(ONE_ETH);
 
@@ -82,8 +97,20 @@ describe("ContestETHOnly", function () {
             // prices = [100000, 150000, 180000]; // (0.0010/0.0015/0.0018)  mul by 1e8. 0.001 means that for 1 eth got 1000 tokens    //_00000000
             // lastTime = parseInt(blockTime)+(8*timePeriod);
 
-            let contestFactory = await ContestFactoryFactory.connect(owner).deploy();
-            let tx = await contestFactory.connect(owner).produceETHOnly(
+            let contestFactory = await ContestFactoryFactory.connect(owner).deploy(NO_COSTMANAGER);
+            // 
+            const factoriesList = [contestFactory.address];
+            const factoryInfo = [
+                [
+                    1,//uint8 factoryIndex; 
+                    1,//uint16 releaseTag; 
+                    "0x53696c766572000000000000000000000000000000000000"//bytes24 factoryChangeNotes;
+                ]
+            ]
+            await contestFactory.connect(owner).registerReleaseManager(releaseManager.address);
+            await releaseManager.connect(owner).newRelease(factoriesList, factoryInfo);
+
+            tx = await contestFactory.connect(owner).produceETHOnly(
                 3, // stagesCount,
                 [minAmountInStage,minAmountInStage,minAmountInStage], // stagesMinAmount
                 100, // contestPeriodInSeconds,
@@ -93,9 +120,9 @@ describe("ContestETHOnly", function () {
                 [] // judges   
             );
 
-            const rc = await tx.wait(); // 0ms, as tx is already confirmed
-            const event = rc.events.find(event => event.event === 'InstanceCreated');
-            const [instance,] = event.args;
+            rc = await tx.wait(); // 0ms, as tx is already confirmed
+            event = rc.events.find(event => event.event === 'InstanceCreated');
+            [instance,] = event.args;
 
             ContestETHOnlyInstance = await ethers.getContractAt("ContestETHOnly",instance);   
 
@@ -363,16 +390,41 @@ describe("ContestETHOnly", function () {
 
     describe(`${trustedForwardMode ? '[trusted forwarder]' : ''} Stage Workflow`, function () {
         beforeEach("deploying", async() => {
+            let implementationReleaseManager    = await ReleaseManagerF.deploy();
+            let releaseManagerFactory   = await ReleaseManagerFactoryF.connect(owner).deploy(implementationReleaseManager.address);
+            let tx,rc,event,instance,instancesCount;
+            //
+            tx = await releaseManagerFactory.connect(owner).produce();
+            rc = await tx.wait(); // 0ms, as tx is already confirmed
+            event = rc.events.find(event => event.event === 'InstanceProduced');
+            [instance, instancesCount] = event.args;
+            let releaseManager = await ethers.getContractAt("MockReleaseManager",instance);
+
+
             stageID = 0;
             minAmountInStage = THREE.mul(ONE_ETH);
 
+            
             // let timePeriod = 60*24*60*60;
             // timestamps = [blockTime+(2*timePeriod), blockTime+(4*timePeriod), blockTime+(6*timePeriod)];
             // prices = [100000, 150000, 180000]; // (0.0010/0.0015/0.0018)  mul by 1e8. 0.001 means that for 1 eth got 1000 tokens    //_00000000
             // lastTime = parseInt(blockTime)+(8*timePeriod);
 
-            let contestFactory = await ContestFactoryFactory.connect(owner).deploy();
-            let tx = await contestFactory.connect(owner).produceETHOnly(
+            let contestFactory = await ContestFactoryFactory.connect(owner).deploy(NO_COSTMANAGER);
+
+            // 
+            const factoriesList = [contestFactory.address];
+            const factoryInfo = [
+                [
+                    1,//uint8 factoryIndex; 
+                    1,//uint16 releaseTag; 
+                    "0x53696c766572000000000000000000000000000000000000"//bytes24 factoryChangeNotes;
+                ]
+            ]
+            await contestFactory.connect(owner).registerReleaseManager(releaseManager.address);
+            await releaseManager.connect(owner).newRelease(factoriesList, factoryInfo);
+
+            tx = await contestFactory.connect(owner).produceETHOnly(
                 3, // stagesCount,
                 [NINE.mul(ONE_ETH),THREE.mul(ONE_ETH),THREE.mul(ONE_ETH)], // stagesMinAmount
                 100, // contestPeriodInSeconds,
@@ -382,9 +434,9 @@ describe("ContestETHOnly", function () {
                 [] // judges
             );
 
-            const rc = await tx.wait(); // 0ms, as tx is already confirmed
-            const event = rc.events.find(event => event.event === 'InstanceCreated');
-            const [instance,] = event.args;
+            rc = await tx.wait(); // 0ms, as tx is already confirmed
+            event = rc.events.find(event => event.event === 'InstanceCreated');
+            [instance,] = event.args;
 
             ContestETHOnlyInstance = await ethers.getContractAt("ContestETHOnly",instance);   
             // ContestETHOnlyInstance = await ContestETHOnlyF.connect(owner).deploy();
