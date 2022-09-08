@@ -141,6 +141,8 @@ contract ContestFactory is Ownable, CostManagerFactoryHelper, ReleaseManagerHelp
         _produce(instance);
         Contest(payable(instance)).init(token_address, stagesCount, stagesMinAmount, contestPeriodInSeconds, votePeriodInSeconds, revokePeriodInSeconds, percentForWinners, judges, costManager, msg.sender);
         Ownable(instance).transferOwnership(msg.sender);
+
+        registerInstance(instance);
     }
 
     /**
@@ -169,6 +171,8 @@ contract ContestFactory is Ownable, CostManagerFactoryHelper, ReleaseManagerHelp
         _produce(instance);
         ContestETHOnly(payable(instance)).init(stagesCount, stagesMinAmount, contestPeriodInSeconds, votePeriodInSeconds, revokePeriodInSeconds, percentForWinners, judges, costManager, msg.sender);
         Ownable(instance).transferOwnership(msg.sender);
+
+        registerInstance(instance);
     }
 
     ////////////////////////////////////////////////////////////////////////
