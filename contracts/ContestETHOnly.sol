@@ -4,12 +4,13 @@ pragma solidity ^0.8.0;
 import "./ContestBase.sol";
 
 contract ContestETHOnly is ContestBase {
-    
+
+    error SentEthDoesNotEqualWithAmount();
     /**
      * Recieved ether and transfer token to sender
      */
     receive() external payable {
-        require(true == false, "Method does not support. Send ETH with pledgeETH() method");
+        revert MethodDoesNotSupported(); // "Method does not support. Send ETH with pledgeETH() method"
     }
     
     /**
@@ -20,7 +21,8 @@ contract ContestETHOnly is ContestBase {
      * @param revokePeriodInSeconds duration in seconds  for revoking period
      * @param percentForWinners array of values in percentages of overall amount that will gain winners 
      * @param judges array of judges' addresses. if empty than everyone can vote
-     * 
+     * @param costManager address of costManager
+     * @param producedBy who produсed contract address
      */
     function init(
         uint256 stagesCount,
@@ -29,7 +31,9 @@ contract ContestETHOnly is ContestBase {
         uint256 votePeriodInSeconds,
         uint256 revokePeriodInSeconds,
         uint256[] memory percentForWinners,
-        address[] memory judges
+        address[] memory judges,
+        address costManager,
+        address producedBy
     ) 
         public 
         initializer 
@@ -41,7 +45,13 @@ contract ContestETHOnly is ContestBase {
             votePeriodInSeconds,
             revokePeriodInSeconds,
             percentForWinners,
-            judges
+            judges,
+            costManager
+        );
+        _accountForOperation(
+            OPERATION_INITIALIZE_ETH_ONLY << OPERATION_SHIFT_BITS,
+            uint256(uint160(producedBy)),
+            0
         );
     }
     
@@ -51,7 +61,10 @@ contract ContestETHOnly is ContestBase {
      * @param stageID Stage number
      */
     function pledgeETH(uint256 amount, uint256 stageID) public payable nonReentrant() {
-        require (msg.value == amount, "Sent ETH does not equal with amount");
+        if (msg.value != amount) {
+            revert SentEthDoesNotEqualWithAmount(); // "Sent ETH does not equal with amount"
+        }
+        
         _pledge(msg.value, stageID);
     }
     
