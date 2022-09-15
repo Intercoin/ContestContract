@@ -47,7 +47,7 @@ describe("ContestETHOnly", function () {
     const trustedForwarder = accounts[12];
     
     // setup useful vars
-    
+    var ContestF;
     var ContestETHOnlyF;
     var ContestFactoryFactory;
     
@@ -63,6 +63,7 @@ describe("ContestETHOnly", function () {
         // make snapshot before time manipulations
         snapId = await ethers.provider.send('evm_snapshot', []);
 
+        ContestF = await ethers.getContractFactory("Contest");
         ContestETHOnlyF = await ethers.getContractFactory("ContestETHOnly");
         ContestFactoryFactory = await ethers.getContractFactory("ContestFactory");
         ReleaseManagerFactoryF= await ethers.getContractFactory("MockReleaseManagerFactory")
@@ -96,8 +97,13 @@ describe("ContestETHOnly", function () {
             // timestamps = [blockTime+(2*timePeriod), blockTime+(4*timePeriod), blockTime+(6*timePeriod)];
             // prices = [100000, 150000, 180000]; // (0.0010/0.0015/0.0018)  mul by 1e8. 0.001 means that for 1 eth got 1000 tokens    //_00000000
             // lastTime = parseInt(blockTime)+(8*timePeriod);
-
-            let contestFactory = await ContestFactoryFactory.connect(owner).deploy(NO_COSTMANAGER);
+            let contestImpl = await ContestF.deploy();
+            let contestETHOnlyImpl = await ContestETHOnlyF.deploy();
+            let contestFactory = await ContestFactoryFactory.connect(owner).deploy(
+                contestImpl.address,
+                contestETHOnlyImpl.address,
+                NO_COSTMANAGER
+            );
             // 
             const factoriesList = [contestFactory.address];
             const factoryInfo = [
@@ -410,7 +416,13 @@ describe("ContestETHOnly", function () {
             // prices = [100000, 150000, 180000]; // (0.0010/0.0015/0.0018)  mul by 1e8. 0.001 means that for 1 eth got 1000 tokens    //_00000000
             // lastTime = parseInt(blockTime)+(8*timePeriod);
 
-            let contestFactory = await ContestFactoryFactory.connect(owner).deploy(NO_COSTMANAGER);
+            let contestImpl = await ContestF.deploy();
+            let contestETHOnlyImpl = await ContestETHOnlyF.deploy();
+            let contestFactory = await ContestFactoryFactory.connect(owner).deploy(
+                contestImpl.address,
+                contestETHOnlyImpl.address,
+                NO_COSTMANAGER
+            );
 
             // 
             const factoriesList = [contestFactory.address];

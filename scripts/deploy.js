@@ -57,8 +57,8 @@ async function main() {
 	
 	let _params = [
 		// implementation was created inside
-		// data_object.implementationContest,
-		// data_object.implementationContestETHOnly,
+		data_object.implementationContest,
+		data_object.implementationContestETHOnly,
 		ZERO_ADDRESS //costmanager
 	]
 	let params = [

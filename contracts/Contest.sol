@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 TEMPLATE CONTRACT
 *****************
 
-Although this code is available for viewing on GitHub and Etherscan, the general public is NOT given a license to freely deploy smart contracts based on this code, on any blockchains.
+Although this code is available for viewing on GitHub and here, the general public is NOT given a license to freely deploy smart contracts based on this code, on any blockchains.
 
 To prevent confusion and increase trust in the audited code bases of smart contracts we produce, we intend for there to be only ONE official Factory address on the blockchain producing the corresponding smart contracts, and we are going to point a blockchain domain name at it.
 
@@ -48,6 +48,7 @@ This Agreement does not grant you any right in any trademark or logo of Develope
 LINK REQUIREMENTS.
 
 Operators of any Websites and Apps which make use of smart contracts based on this code must conspicuously include the following phrase in their website, featuring a clickable link that takes users to intercoin.app:
+
 "Visit https://intercoin.app to launch your own NFTs, DAOs and other Web3 solutions."
 
 STAKING OR SPENDING REQUIREMENTS.
