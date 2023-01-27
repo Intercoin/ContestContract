@@ -87,8 +87,10 @@ contract ContestFactory is Ownable, CostManagerFactoryHelper, ReleaseManagerHelp
     constructor(
         address contestImpl,
         address contestETHOnlyImpl,
-        address costManager
+        address costManager,
+        address releaseManager
     ) 
+        ReleaseManagerHelper(releaseManager)
         CostManagerFactoryHelper(costManager)
     {
 

@@ -59,7 +59,8 @@ async function main() {
 		// implementation was created inside
 		data_object.implementationContest,
 		data_object.implementationContestETHOnly,
-		ZERO_ADDRESS //costmanager
+		ZERO_ADDRESS, //costmanager
+		data_object.releaseManager
 	]
 	let params = [
 		..._params,
@@ -72,8 +73,6 @@ async function main() {
 	const ContestFactoryF = await ethers.getContractFactory("ContestFactory");
 
 	this.factory = await ContestFactoryF.connect(deployer).deploy(...params);
-
-	await this.factory.connect(deployer).registerReleaseManager(data_object.releaseManager);
 
 	console.log("Factory deployed at:", this.factory.address);
 	console.log("with params:", [..._params]);

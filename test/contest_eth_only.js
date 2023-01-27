@@ -102,7 +102,8 @@ describe("ContestETHOnly", function () {
             let contestFactory = await ContestFactoryFactory.connect(owner).deploy(
                 contestImpl.address,
                 contestETHOnlyImpl.address,
-                NO_COSTMANAGER
+                NO_COSTMANAGER,
+                releaseManager.address
             );
             // 
             const factoriesList = [contestFactory.address];
@@ -113,7 +114,7 @@ describe("ContestETHOnly", function () {
                     "0x53696c766572000000000000000000000000000000000000"//bytes24 factoryChangeNotes;
                 ]
             ]
-            await contestFactory.connect(owner).registerReleaseManager(releaseManager.address);
+
             await releaseManager.connect(owner).newRelease(factoriesList, factoryInfo);
 
             tx = await contestFactory.connect(owner).produceETHOnly(
@@ -421,7 +422,8 @@ describe("ContestETHOnly", function () {
             let contestFactory = await ContestFactoryFactory.connect(owner).deploy(
                 contestImpl.address,
                 contestETHOnlyImpl.address,
-                NO_COSTMANAGER
+                NO_COSTMANAGER,
+                releaseManager.address
             );
 
             // 
@@ -433,7 +435,7 @@ describe("ContestETHOnly", function () {
                     "0x53696c766572000000000000000000000000000000000000"//bytes24 factoryChangeNotes;
                 ]
             ]
-            await contestFactory.connect(owner).registerReleaseManager(releaseManager.address);
+
             await releaseManager.connect(owner).newRelease(factoriesList, factoryInfo);
 
             tx = await contestFactory.connect(owner).produceETHOnly(
