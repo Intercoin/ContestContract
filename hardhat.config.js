@@ -25,11 +25,10 @@ module.exports = {
   networks: {
     hardhat: {
       allowUnlimitedContractSize: false,
-      gas: 12000000,
+      gasPrice: "auto",
       gasLimit: 22000000,
       forking: {
-        url: mainnetURL,
-        blockNumber: 13539017
+        url: mainnetURL
       }
     },
     kovan: {
