@@ -20,6 +20,7 @@ const rinkebyURL = `https://rinkeby.infura.io/v3/${process.env.INFURA_ID_PROJECT
 const bscURL = 'https://bsc-dataseed.binance.org' //`https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_RINKEBY}`
 const mainnetURL = `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_MAINNET}`
 const maticURL = `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_MATIC}`
+const mumbaiURL = 'https://matic-mumbai.chainstacklabs.com';
 
 module.exports = {
   networks: {
@@ -66,6 +67,13 @@ module.exports = {
       accounts: [process.env.private_key],
       saveDeployments: true
     },
+    mumbai: {
+      url: mumbaiURL,
+      chainId: 80001,
+      gasPrice: "auto",
+      accounts: [process.env.private_key],
+      saveDeployments: true
+    },
     mainnet: {
       url: mainnetURL,
       chainId: 1,
@@ -85,9 +93,9 @@ module.exports = {
     currency: "USD"
   },
   etherscan: {
-    //apiKey: process.env.MATIC_API_KEY
+    apiKey: process.env.MATIC_API_KEY
     //apiKey: process.env.ETHERSCAN_API_KEY
-    apiKey: process.env.BSCSCAN_API_KEY
+    //apiKey: process.env.BSCSCAN_API_KEY
   },
   solidity: {
     compilers: [
