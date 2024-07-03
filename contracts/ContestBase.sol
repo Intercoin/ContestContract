@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@artman325/releasemanager/contracts/CostManagerHelperERC2771Support.sol";
+import "@intercoin/releasemanager/contracts/CostManagerHelperERC2771Support.sol";
 
 contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHelperERC2771Support, OwnableUpgradeable {
     
@@ -355,8 +355,7 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
         internal 
         onlyInitializing 
     {
-        __CostManagerHelper_init(_msgSender());
-        _setCostManager(costManager);
+        __CostManagerHelper_init(_msgSender(), costManager);
 
         __Ownable_init();
         __ReentrancyGuard_init();
