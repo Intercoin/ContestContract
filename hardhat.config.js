@@ -28,8 +28,9 @@ module.exports = {
       allowUnlimitedContractSize: false,
       gasPrice: "auto",
       gasLimit: 22000000,
+      chainId: 137,
       forking: {
-        url: mainnetURL
+        url: maticURL
       }
     },
     kovan: {
