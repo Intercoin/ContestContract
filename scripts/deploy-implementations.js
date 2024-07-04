@@ -58,7 +58,7 @@ async function main() {
 	// 	gasLimit: 10e6
 	// };
 
-	const deployerBalanceBefore = await deployer.getBalance();
+	const deployerBalanceBefore = await ethers.provider.getBalance(deployer.address);
     console.log("Account balance:", (deployerBalanceBefore).toString());
 
 	const ContestF = await ethers.getContractFactory("Contest");
@@ -68,18 +68,18 @@ async function main() {
 	let implementationContestETHOnly    = await ContestETHOnlyF.connect(deployer).deploy();
 	
 	console.log("Implementations:");
-	console.log("  Contest deployed at:        ", implementationContest.address);
-	console.log("  ContestETHOnly deployed at: ", implementationContestETHOnly.address);
+	console.log("  Contest deployed at:        ", implementationContest.target);
+	console.log("  ContestETHOnly deployed at: ", implementationContestETHOnly.target);
     console.log("Linked with manager:");
     console.log("  Release manager:", RELEASE_MANAGER);
 
-	data_object.implementationContest 	    = implementationContest.address;
-	data_object.implementationContestETHOnly= implementationContestETHOnly.address;
+	data_object.implementationContest 	    = implementationContest.target;
+	data_object.implementationContestETHOnly= implementationContestETHOnly.target;
     data_object.releaseManager	        = RELEASE_MANAGER;
 
-    const deployerBalanceAfter = await deployer.getBalance();
-    console.log("Spent:", ethers.utils.formatEther(deployerBalanceBefore.sub(deployerBalanceAfter)));
-    console.log("gasPrice:", ethers.utils.formatUnits((await network.provider.send("eth_gasPrice")), "gwei")," gwei");
+    const deployerBalanceAfter = await ethers.provider.getBalance(deployer.address);
+    console.log("Spent:", ethers.formatEther(deployerBalanceBefore - deployerBalanceAfter));
+    console.log("gasPrice:", ethers.formatUnits((await network.provider.send("eth_gasPrice")), "gwei")," gwei");
 
 	//---
 	const ts_updated = Date.now();

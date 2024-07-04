@@ -67,21 +67,21 @@ async function main() {
 		options
 	]
 
-	const deployerBalanceBefore = await deployer.getBalance();
+	const deployerBalanceBefore = await ethers.provider.getBalance(deployer.address);
 	console.log("Account balance:", (deployerBalanceBefore).toString());
 
 	const ContestFactoryF = await ethers.getContractFactory("ContestFactory");
 
 	this.factory = await ContestFactoryF.connect(deployer).deploy(...params);
 
-	console.log("Factory deployed at:", this.factory.address);
+	console.log("Factory deployed at:", this.factory.target);
 	console.log("with params:", [..._params]);
 
 	console.log("registered with release manager:", data_object.releaseManager);
 
-	const deployerBalanceAfter = await deployer.getBalance();
-	console.log("Spent:", ethers.utils.formatEther(deployerBalanceBefore.sub(deployerBalanceAfter)));
-	console.log("gasPrice:", ethers.utils.formatUnits((await network.provider.send("eth_gasPrice")), "gwei")," gwei");
+	const deployerBalanceAfter = await ethers.provider.getBalance(deployer.address);
+	console.log("Spent:", ethers.formatEther(deployerBalanceBefore - deployerBalanceAfter));
+	console.log("gasPrice:", ethers.formatUnits((await network.provider.send("eth_gasPrice")), "gwei")," gwei");
 }
 
 main()
