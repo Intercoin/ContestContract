@@ -115,12 +115,14 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
     error MustBeInPledgesOrJudgesList(uint256 stageID, address account);
     error StageHaveNotEndedYet(uint256 stageID);
     error MethodDoesNotSupported();
+    error ForwarderCanNotBeOwner();
+    error DeniedForForwarder();
     
 	////
 	// modifiers section
 	////
-// not (A or B) = (not A) and (not B)
-// not (A and B) = (not A) or (not B)
+    // not (A or B) = (not A) and (not B)
+    // not (A and B) = (not A) or (not B)
     /**
      * @param account address
      * @param stageID Stage number
@@ -550,6 +552,7 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
             
         uint revokedBalance = _contest._stages[stageID].participants[_msgSender()].balance;
         _contest._stages[stageID].amount = _contest._stages[stageID].amount.sub(revokedBalance);
+
         revokeAfter(revokedBalance.sub(revokedBalance.mul(_calculateRevokeFee(stageID)).div(1e6)));
         
         _accountForOperation(
@@ -576,7 +579,7 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
     {
         uint256 endContestTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod);
         uint256 endVoteTimestamp = (_contest._stages[stageID].startTimestampUtc).add(_contest._stages[stageID].contestPeriod).add(_contest._stages[stageID].votePeriod);
-        
+
         if ((endVoteTimestamp > block.timestamp) && (block.timestamp >= endContestTimestamp)) {
             uint256 revokeFeePerSecond = (revokeFee).div(endVoteTimestamp.sub(endContestTimestamp));
             return revokeFeePerSecond.mul(block.timestamp.sub(endContestTimestamp));
@@ -685,6 +688,7 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
         ) {
             _contest._stages[stageID].active = true;
             // fill time
+
             _contest._stages[stageID].startTimestampUtc = block.timestamp;
             _contest._stages[stageID].endTimestampUtc = (block.timestamp)
                 .add(_contest._stages[stageID].contestPeriod)
@@ -833,8 +837,7 @@ contract ContestBase is Initializable, ReentrancyGuardUpgradeable, CostManagerHe
         return TrustedForwarder._msgSender();
         
     }
-error ForwarderCanNotBeOwner();
-error DeniedForForwarder();
+
     function setTrustedForwarder(
         address forwarder
     ) 
