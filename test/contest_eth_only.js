@@ -8,45 +8,9 @@ const {
     deploy
 } = require("./fixtures/deploy.js");
 
-
 const ONE_ETH = ethers.parseEther('1');
 
-//const TOTALSUPPLY = ethers.utils.parseEther('1000000000');    
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-const DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
-const NO_COSTMANAGER = ZERO_ADDRESS;
-
 describe("ContestETHOnly", function () {
-    // const accounts = waffle.provider.getWallets();
-    
-    // // Setup accounts.
-    // const owner = accounts[0];                     
-    // const accountOne = accounts[1];  
-    // const accountTwo = accounts[2];
-    // const accountThree= accounts[3];
-    // const accountFourth = accounts[4];
-    // const accountFive = accounts[5];
-    // const accountSix = accounts[6];
-    // const accountSeven = accounts[7];
-    // const accountEight = accounts[8];
-    // const accountNine = accounts[9];
-    // const accountTen = accounts[10];
-    // const accountEleven = accounts[11];
-    // const trustedForwarder = accounts[12];
-    
-    // // setup useful vars
-    // var ContestF;
-    // var ContestETHOnlyF;
-    // var ContestFactoryFactory;
-    
-    // var ContestETHOnlyInstance;
-    // var ReleaseManagerFactoryF;
-    // var ReleaseManagerF;
-
-    // var stageID;
-    // var snapId;
-    // var  minAmountInStage;
-
 
     describe("Simple tests", function () {
 
@@ -133,13 +97,12 @@ describe("ContestETHOnly", function () {
             const {
                 accountOne,
                 stageID,
+                minAmountInFirstStage,
                 ContestETHOnlyInstance
             } = res;
 
             // make some pledge to reach minimum                                                                
-            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value: ONE_ETH });
-            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value: ONE_ETH });
-            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(ONE_ETH, stageID, {value: ONE_ETH });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInFirstStage, stageID, {value: minAmountInFirstStage });
 
             // pass time.   to voting period
             await time.increase(100);
@@ -169,11 +132,12 @@ describe("ContestETHOnly", function () {
                 accountTwo,
                 stageID,
                 minAmountInStage,
+                minAmountInFirstStage,
                 ContestETHOnlyInstance
             } = res;
 
             // make some pledge to reach minimum
-            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInFirstStage, stageID, {value:minAmountInFirstStage });
             
             // pass time.   to voting period
             await time.increase(100);
@@ -194,11 +158,12 @@ describe("ContestETHOnly", function () {
                 accountFourth,
                 stageID,
                 minAmountInStage,
+                minAmountInFirstStage,
                 ContestETHOnlyInstance
             } = res;
 
             // make some pledge to reach minimum
-            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInFirstStage, stageID, {value:minAmountInFirstStage });
             await ContestETHOnlyInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
             
             await expect(
@@ -232,11 +197,12 @@ describe("ContestETHOnly", function () {
                 accountFourth,
                 stageID,
                 minAmountInStage,
+                minAmountInFirstStage,
                 ContestETHOnlyInstance
             } = res;
 
             // make some pledge to reach minimum
-            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInFirstStage, stageID, {value:minAmountInFirstStage });
             await ContestETHOnlyInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
             
             // pass time.   to voting period
@@ -255,13 +221,14 @@ describe("ContestETHOnly", function () {
                 accountFourth,
                 stageID,
                 minAmountInStage,
+                minAmountInFirstStage,
                 ContestETHOnlyInstance
             } = res;
             
             const accountFourthStartingBalance = await ethers.provider.getBalance(accountFourth.address);
 
             // make some pledge to reach minimum
-            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInFirstStage, stageID, {value:minAmountInFirstStage });
 
             let pledgeTxObj = await ContestETHOnlyInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
 
@@ -302,6 +269,7 @@ describe("ContestETHOnly", function () {
                 accountFourth,
                 stageID,
                 minAmountInStage,
+                minAmountInFirstStage,
                 ContestETHOnlyInstance
             } = res;
             
@@ -309,7 +277,7 @@ describe("ContestETHOnly", function () {
             const accountFourthStartingBalance = await ethers.provider.getBalance(accountFourth.address);
             
             // make some pledge to reach minimum
-            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInStage, stageID, {value:minAmountInStage });
+            await ContestETHOnlyInstance.connect(accountOne).pledgeETH(minAmountInFirstStage, stageID, {value:minAmountInFirstStage });
             var timestampStageTurnActive = (await ethers.provider.getBlock('latest')).timestamp;            
 
             let pledgeTxObj = await ContestETHOnlyInstance.connect(accountFourth).pledgeETH(ONE_ETH, stageID, {value:ONE_ETH });
@@ -360,7 +328,7 @@ describe("ContestETHOnly", function () {
                     accountOne,
                     ContestETHOnlyInstance
                 } = res;
-                expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(ZERO_ADDRESS)).to.be.true;
+                expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(ethers.ZeroAddress)).to.be.true;
             });
 
             it("should be setup by owner", async() => {
@@ -372,7 +340,7 @@ describe("ContestETHOnly", function () {
                     ContestETHOnlyInstance
                 } = res;
                 await expect(ContestETHOnlyInstance.connect(accountOne).setTrustedForwarder(accountTwo.address)).to.be.revertedWith("Ownable: caller is not the owner");
-                expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(ZERO_ADDRESS)).to.be.true;
+                expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(ethers.ZeroAddress)).to.be.true;
                 await ContestETHOnlyInstance.connect(owner).setTrustedForwarder(accountTwo.address);
                 expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(accountTwo.address)).to.be.true;
             });
@@ -389,7 +357,7 @@ describe("ContestETHOnly", function () {
                 await ContestETHOnlyInstance.connect(owner).setTrustedForwarder(accountTwo.address);
                 expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(accountTwo.address)).to.be.true;
                 await ContestETHOnlyInstance.connect(owner).transferOwnership(accountTwo.address);
-                expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(ZERO_ADDRESS)).to.be.true;
+                expect(await ContestETHOnlyInstance.connect(accountOne).isTrustedForwarder(ethers.ZeroAddress)).to.be.true;
             });
 
             it("shouldnt become owner and trusted forwarder", async() => {
@@ -405,94 +373,34 @@ describe("ContestETHOnly", function () {
         });
         
     });
-/*
-    for (const trustedForwardMode of [false,trustedForwarder]) {
-
-    describe(`${trustedForwardMode ? '[trusted forwarder]' : ''} Stage Workflow`, function () {
-        beforeEach("deploying", async() => {
-            let implementationReleaseManager    = await ReleaseManagerF.deploy();
-            let releaseManagerFactory   = await ReleaseManagerFactoryF.connect(owner).deploy(implementationReleaseManager.address);
-            let tx,rc,event,instance,instancesCount;
-            //
-            tx = await releaseManagerFactory.connect(owner).produce();
-            rc = await tx.wait(); // 0ms, as tx is already confirmed
-            event = rc.events.find(event => event.event === 'InstanceProduced');
-            [instance, instancesCount] = event.args;
-            let releaseManager = await ethers.getContractAt("MockReleaseManager",instance);
 
 
-            stageID = 0;
-            minAmountInStage = 3n.mul(ONE_ETH);
-
-            
-            // let timePeriod = 60*24*60*60;
-            // timestamps = [blockTime+(2*timePeriod), blockTime+(4*timePeriod), blockTime+(6*timePeriod)];
-            // prices = [100000, 150000, 180000]; // (0.0010/0.0015/0.0018)  mul by 1e8. 0.001 means that for 1 eth got 1000 tokens    //_00000000
-            // lastTime = parseInt(blockTime)+(8*timePeriod);
-
-            let contestImpl = await ContestF.deploy();
-            let contestETHOnlyImpl = await ContestETHOnlyF.deploy();
-            let contestFactory = await ContestFactoryFactory.connect(owner).deploy(
-                contestImpl.address,
-                contestETHOnlyImpl.address,
-                NO_COSTMANAGER,
-                releaseManager.address
-            );
-
-            // 
-            const factoriesList = [contestFactory.address];
-            const factoryInfo = [
-                [
-                    1,//uint8 factoryIndex; 
-                    1,//uint16 releaseTag; 
-                    "0x53696c766572000000000000000000000000000000000000"//bytes24 factoryChangeNotes;
-                ]
-            ]
-
-            await releaseManager.connect(owner).newRelease(factoriesList, factoryInfo);
-
-            tx = await contestFactory.connect(owner).produceETHOnly(
-                3, // stagesCount,
-                [9n.mul(ONE_ETH),3n.mul(ONE_ETH),3n.mul(ONE_ETH)], // stagesMinAmount
-                100, // contestPeriodInSeconds,
-                100, // votePeriodInSeconds,
-                100, // revokePeriodInSeconds,
-                [50,30,10], //percentForWinners,
-                [] // judges
-            );
-
-            rc = await tx.wait(); // 0ms, as tx is already confirmed
-            event = rc.events.find(event => event.event === 'InstanceCreated');
-            [instance,] = event.args;
-
-            ContestETHOnlyInstance = await ethers.getContractAt("ContestETHOnly",instance);   
-            // ContestETHOnlyInstance = await ContestETHOnlyF.connect(owner).deploy();
-            // await ContestETHOnlyInstance.connect(owner).init(
-            //     3, // stagesCount,
-            //     [9n.mul(ONE_ETH),3n.mul(ONE_ETH),3n.mul(ONE_ETH)], // stagesMinAmount
-            //     100, // contestPeriodInSeconds,
-            //     100, // votePeriodInSeconds,
-            //     100, // revokePeriodInSeconds,
-            //     [50,30,10], //percentForWinners,
-            //     [] // judges
-            // );
-
-            if (trustedForwardMode) {
-                await ContestETHOnlyInstance.connect(owner).setTrustedForwarder(trustedForwarder.address);
-            }
-        });
-        it('shouldnt complete until stage have not ended yet', async () => {
-            await mixedCall(ContestETHOnlyInstance, trustedForwardMode, owner, 'complete(uint256)', [stageID], `StageHaveNotEndedYet(${stageID})`);
-        }); 
-        
-
-        let testData = [
+    async function getCases() {
+        const res = await loadFixture(deploy);
+        const {
+            owner,
+            accountOne,
+            accountTwo,
+            accountThree,
+            accountFourth,
+            accountFive,
+            accountSix,
+            accountSeven,
+            accountEight,
+            accountNine,
+            accountTen,
+            accountEleven,
+            trustedForwarder,
+            stageID,
+            ContestETHOnlyInstance
+        } = res;
+        const CASES = [
             {
                 title: 'should get correct prizes for winners&losers',
                 entered: [accountFive, accountSix, accountSeven, accountEight, accountNine],
                 pledged: [
-                    [accountOne,5n.mul(ONE_ETH)],
-                    [accountTwo,3n.mul(ONE_ETH)],
+                    [accountOne,5n * (ONE_ETH)],
+                    [accountTwo,3n * (ONE_ETH)],
                     [accountThree,ONE_ETH],
                     [accountFourth,ONE_ETH],
                     [accountTen,ONE_ETH]
@@ -506,21 +414,21 @@ describe("ContestETHOnly", function () {
                 ],
                 delegating:[],
                 claiming: [
-                    [accountFive,   50],
-                    [accountSix,    30],
-                    [accountSeven,  10],
-                    [accountEight,  5],
-                    [accountNine,   5],
+                    [accountFive,   50n],
+                    [accountSix,    30n],
+                    [accountSeven,  10n],
+                    [accountEight,  5n],
+                    [accountNine,   5n],
                 ],
-                claimingDenominator:1
+                claimingDenominator:1n
             },
             {
                 title: 'winners\'s same weights(order by entering)',
                 entered: [accountFive, accountSix, accountSeven, accountEight, accountNine],
                 pledged: [
-                    [accountOne,5n.mul(ONE_ETH)],
-                    [accountTwo,5n.mul(ONE_ETH)],
-                    [accountThree,5n.mul(ONE_ETH)],
+                    [accountOne,5n * (ONE_ETH)],
+                    [accountTwo,5n * (ONE_ETH)],
+                    [accountThree,5n * (ONE_ETH)],
                     [accountFourth,ONE_ETH],
                     [accountTen,ONE_ETH]
                 ],
@@ -533,21 +441,21 @@ describe("ContestETHOnly", function () {
                 ],
                 delegating:[],
                 claiming: [
-                    [accountFive,   50],
-                    [accountSix,    30],
-                    [accountSeven,  10],
-                    [accountEight,  5],
-                    [accountNine,   5],
+                    [accountFive,   50n],
+                    [accountSix,    30n],
+                    [accountSeven,  10n],
+                    [accountEight,  5n],
+                    [accountNine,   5n],
                 ],
-                claimingDenominator:1
+                claimingDenominator:1n
             },
             {
                 title: 'the one winner with 3 contest\'s prizes',
                 entered: [accountFive, accountSix, accountSeven, accountEight, accountNine],
                 pledged: [
-                    [accountOne,5n.mul(ONE_ETH)],
-                    [accountTwo,5n.mul(ONE_ETH)],
-                    [accountThree,5n.mul(ONE_ETH)],
+                    [accountOne,5n * (ONE_ETH)],
+                    [accountTwo,5n * (ONE_ETH)],
+                    [accountThree,5n * (ONE_ETH)],
                     [accountFourth,ONE_ETH],
                     [accountTen,ONE_ETH]
                 ],
@@ -556,41 +464,41 @@ describe("ContestETHOnly", function () {
                 ],
                 delegating:[],
                 claiming: [
-                    [accountFive,   5000],
-                    [accountSix,    1250],
-                    [accountSeven,  1250],
-                    [accountEight,  1250],
-                    [accountNine,   1250],
+                    [accountFive,   5000n],
+                    [accountSix,    1250n],
+                    [accountSeven,  1250n],
+                    [accountEight,  1250n],
+                    [accountNine,   1250n],
                 ],
-                claimingDenominator:100
+                claimingDenominator:100n
             },
             {
                 title: 'there are no winners',
                 entered: [accountFive, accountSix, accountSeven, accountEight, accountNine],
                 pledged: [
-                    [accountOne,5n.mul(ONE_ETH)],
-                    [accountTwo,5n.mul(ONE_ETH)],
-                    [accountThree,5n.mul(ONE_ETH)],
+                    [accountOne,5n * (ONE_ETH)],
+                    [accountTwo,5n * (ONE_ETH)],
+                    [accountThree,5n * (ONE_ETH)],
                     [accountFourth,ONE_ETH],
                     [accountTen,ONE_ETH]
                 ],
                 voting:[],
                 delegating:[],
                 claiming: [
-                    [accountFive,   20],
-                    [accountSix,    20],
-                    [accountSeven,  20],
-                    [accountEight,  20],
-                    [accountNine,   20],
+                    [accountFive,   20n],
+                    [accountSix,    20n],
+                    [accountSeven,  20n],
+                    [accountEight,  20n],
+                    [accountNine,   20n],
                 ],
-                claimingDenominator:1
+                claimingDenominator:1n
             },
             {
                 title: 'there are no entered',
                 entered: [],
                 pledged: [
-                    [accountOne,5n.mul(ONE_ETH)],
-                    [accountTwo,3n.mul(ONE_ETH)],
+                    [accountOne,5n * (ONE_ETH)],
+                    [accountTwo,3n * (ONE_ETH)],
                     [accountThree,ONE_ETH],
                     [accountFourth,ONE_ETH],
                     [accountTen,ONE_ETH]
@@ -598,22 +506,22 @@ describe("ContestETHOnly", function () {
                 voting:[],
                 delegating:[],
                 claiming: [
-                    [accountFive,   50, `MustBeInContestantList(0, "${accountFive.address}")`],
-                    [accountSix,    30, `MustBeInContestantList(0, "${accountSix.address}")`],
-                    [accountSeven,  10, `MustBeInContestantList(0, "${accountSeven.address}")`],
-                    [accountEight,  5, `MustBeInContestantList(0, "${accountEight.address}")`],
-                    [accountNine,   5, `MustBeInContestantList(0, "${accountNine.address}")`],
+                    [accountFive,   50n, `MustBeInContestantList(0, "${accountFive.address}")`],
+                    [accountSix,    30n, `MustBeInContestantList(0, "${accountSix.address}")`],
+                    [accountSeven,  10n, `MustBeInContestantList(0, "${accountSeven.address}")`],
+                    [accountEight,  5n, `MustBeInContestantList(0, "${accountEight.address}")`],
+                    [accountNine,   5n, `MustBeInContestantList(0, "${accountNine.address}")`],
                 ],
-                claimingDenominator:1,
+                claimingDenominator:1n,
                 checkStageSwitchNumber: true
             },
             {
                 title: 'test with delegation',
                 entered: [accountFive, accountSix, accountSeven, accountEight, accountNine],
                 pledged: [
-                    [accountOne,5n.mul(ONE_ETH)],
-                    [accountTwo,5n.mul(ONE_ETH)],
-                    [accountThree,5n.mul(ONE_ETH)],
+                    [accountOne,5n * (ONE_ETH)],
+                    [accountTwo,5n * (ONE_ETH)],
+                    [accountThree,5n * (ONE_ETH)],
                     [accountFourth,ONE_ETH],
                     [accountTen,ONE_ETH]
                 ],
@@ -627,99 +535,138 @@ describe("ContestETHOnly", function () {
                     [accountTen,accountThree]
                 ],
                 claiming: [
-                    [accountFive,   30],
-                    [accountSix,    10],
-                    [accountSeven,  50],
-                    [accountEight,  5],
-                    [accountNine,   5],
+                    [accountFive,   30n],
+                    [accountSix,    10n],
+                    [accountSeven,  50n],
+                    [accountEight,  5n],
+                    [accountNine,   5n],
                 ],
-                claimingDenominator:1
+                claimingDenominator:1n
             },
 
         ];
-      
+        return CASES;
+    }
 
-        testData.forEach(element => {
-            
-            it(element.title, async () => {
+    for (const trustedForwardMode of [false, true]) {
+
+    describe(`${trustedForwardMode ? '[trusted forwarder]' : ''} Stage Workflow`, function () {
+        
+        it('shouldnt complete until stage have not ended yet', async () => {
+            const res = await loadFixture(deploy);
+            const {
+                owner,
+                trustedForwarder,
+                stageID,
+                ContestETHOnlyInstance
+            } = res;
+            if (trustedForwardMode) {
+                await ContestETHOnlyInstance.connect(owner).setTrustedForwarder(trustedForwarder.address);
+            }
+            await mixedCall(ContestETHOnlyInstance,trustedForwarder, trustedForwardMode, owner, 'complete(uint256)', [stageID], `StageHaveNotEndedYet`, [stageID]);
+        }); 
+
+
+        for(let uid in [0,1,2,3,4,5]) {
+            it('Test'+uid, async function() {
+                
+                const cases = await getCases();
+                const element = cases[uid];
+
+                this.test.title = element.title;
+
+                const res = await loadFixture(deploy);
+                const {
+                    owner,
+                    trustedForwarder,
+                    stageID,
+                    ContestETHOnlyInstance
+                } = res;
+
+                if (trustedForwardMode) {
+                    await ContestETHOnlyInstance.connect(owner).setTrustedForwarder(trustedForwarder.address);
+                }
+
                 // enter 
                 for (const acc of element.entered) {
-                    await mixedCall(ContestETHOnlyInstance, trustedForwardMode, acc, 'enter(uint256)', [stageID]);
+                    await mixedCall(ContestETHOnlyInstance,trustedForwarder, trustedForwardMode, acc, 'enter(uint256)', [stageID]);
                 };
 
                 var totalPledged = 0n;
                 // make some pledge X ETH to reach minimum
                 for (const item of element.pledged) {
-                    totalPledged = totalPledged.add(item[1]);
-                    await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'pledgeETH(uint256,uint256)', [item[1], stageID, {value:item[1] }]);
+                    totalPledged = totalPledged + item[1];
+                    await mixedCall(ContestETHOnlyInstance,trustedForwarder, trustedForwardMode, item[0], 'pledgeETH(uint256,uint256)', [item[1], stageID, {value:item[1] }]);
                 };
 
                 const stageAmount = await ContestETHOnlyInstance.getStageAmount(stageID);
                 expect(totalPledged).to.be.eq(stageAmount);
-                
+
                 const stageNumberBefore = await ContestETHOnlyInstance.getStageNumber();
 
                 // pass time.   to voting period
-                await ethers.provider.send('evm_increaseTime', [100]);
-                await ethers.provider.send('evm_mine');
+                // await ethers.provider.send('evm_increaseTime', [100]);
+                // await ethers.provider.send('evm_mine');
+                await time.increase(100);
 
                 //voting
                 for (const item of element.voting) {
-                    await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'vote(address,uint256)', [item[1].address, stageID]);
+                    await mixedCall(ContestETHOnlyInstance,trustedForwarder, trustedForwardMode, item[0], 'vote(address,uint256)', [item[1].address, stageID]);
                 };
                 //delegating
                 for (const item of element.delegating) {
-                    await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'delegate(address,uint256)', [item[1].address, stageID]);
+                    await mixedCall(ContestETHOnlyInstance,trustedForwarder, trustedForwardMode, item[0], 'delegate(address,uint256)', [item[1].address, stageID]);
                 };
 
                 // pass time.   to complete period
-                await ethers.provider.send('evm_increaseTime', [200]);
-                await ethers.provider.send('evm_mine');
+                // await ethers.provider.send('evm_increaseTime', [200]);
+                // await ethers.provider.send('evm_mine');
+                await time.increase(200);
 
                 // call complete by owner
-                await mixedCall(ContestETHOnlyInstance, trustedForwardMode, owner, 'complete(uint256)', [stageID]);
+                await mixedCall(ContestETHOnlyInstance,trustedForwarder, trustedForwardMode, owner, 'complete(uint256)', [stageID]);
 
                 //calculations
                 for (const item of element.claiming) {
 
                     if (typeof(item[2]) !== 'undefined') {
                         //catch Error
-                        await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'claim(uint256)', [stageID], `MustBeInContestantList(${stageID}, "${item[0].address}")`);
+                        await mixedCall(ContestETHOnlyInstance,trustedForwarder, trustedForwardMode, item[0], 'claim(uint256)', [stageID], 'MustBeInContestantList', [stageID, item[0].address]);
                     } else {
                         let startingBalance = await ethers.provider.getBalance(item[0].address);
                                             
-                        let txObj = await mixedCall(ContestETHOnlyInstance, trustedForwardMode, item[0], 'claim(uint256)', [stageID]);
+                        let txObj = await mixedCall(ContestETHOnlyInstance,trustedForwarder, trustedForwardMode, item[0], 'claim(uint256)', [stageID]);
                         let tx = await txObj.wait();
 
                         let endingBalance = await ethers.provider.getBalance(item[0].address);
                         //reward
                         expect(
-                            totalPledged.mul(item[1]).div(100).div(element.claimingDenominator)
+                            totalPledged * item[1] / 100n / element.claimingDenominator
                         ).to.be.eq(
+                            
                             (trustedForwardMode === false) ? (
-                                endingBalance.sub(startingBalance).add(
-                                    1n.mul(tx.gasUsed).mul(tx.effectiveGasPrice)
-                                )
+                                
+                                endingBalance - (startingBalance) + (tx.gasUsed * tx.gasPrice)
                             ):(
                                 // via transfer forwarder calls fee payed by forwarder
-                                endingBalance.sub(startingBalance)
+                                endingBalance - startingBalance
                             )
                             
                         )
                     }
                 };
 
-                
-                const stageNumberAfter = await ContestETHOnlyInstance.getStageNumber();
-                
-                if ((typeof(element.checkStageSwitchNumber) !== 'undefined') && element.checkStageSwitchNumber == true) {
-                    expect(stageNumberBefore.add(1)).to.be.eq(stageNumberAfter)
-                }
-            
-            });
 
-        });
+                const stageNumberAfter = await ContestETHOnlyInstance.getStageNumber();
+
+                if ((typeof(element.checkStageSwitchNumber) !== 'undefined') && element.checkStageSwitchNumber == true) {
+                    expect(stageNumberBefore + 1n).to.be.eq(stageNumberAfter)
+                }
+                // etc.
+            });
+        }
+
     }); 
     }
-    */
+    
 }); 

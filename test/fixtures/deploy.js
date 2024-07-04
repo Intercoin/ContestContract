@@ -35,6 +35,7 @@ async function deploy()  {
     const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
     const stageID = 0;
     const minAmountInStage = ethers.parseEther('3')//3n.mul(ONE_ETH);
+    const minAmountInFirstStage = 3n* minAmountInStage;
     const NO_COSTMANAGER = ZERO_ADDRESS;
 
     // let timePeriod = 60*24*60*60;
@@ -63,7 +64,8 @@ async function deploy()  {
 
     tx = await contestFactory.connect(owner).produceETHOnly(
         3, // stagesCount,
-        [minAmountInStage,minAmountInStage,minAmountInStage], // stagesMinAmount
+        //[minAmountInStage,minAmountInStage,minAmountInStage], // stagesMinAmount
+        [minAmountInFirstStage,minAmountInStage,minAmountInStage], // stagesMinAmount
         100, // contestPeriodInSeconds,
         100, // votePeriodInSeconds,
         100, // revokePeriodInSeconds,
@@ -99,6 +101,7 @@ async function deploy()  {
         //----
         stageID,
         minAmountInStage,
+        minAmountInFirstStage,
         ZERO_ADDRESS,
         NO_COSTMANAGER,
         //----
