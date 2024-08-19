@@ -92,6 +92,7 @@ async function main() {
 	const ContestFactoryF = await ethers.getContractFactory("ContestFactory");
 
 	this.factory = await ContestFactoryF.connect(depl_contest).deploy(...params);
+	await this.factory.waitForDeployment();
 
 	console.log("Factory deployed at:", this.factory.target);
 	console.log("with params:", [..._params]);
@@ -120,7 +121,6 @@ async function main() {
     console.log('newRelease - mined');
 	console.log('this.factory = ', this.factory.target);
 
-	
     if (networkName == 'hardhat') {
         console.log("skipping verifying for  'hardhat' network");
     } else {

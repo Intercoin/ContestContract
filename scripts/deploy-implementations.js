@@ -65,7 +65,7 @@ async function main() {
             depl_contest
         ] = signers;
     }
-    
+
     const RELEASE_MANAGER = process.env.RELEASE_MANAGER;//hre.network.name == 'mumbai'? process.env.RELEASE_MANAGER_MUMBAI : process.env.RELEASE_MANAGER;
 	console.log(
 		"Deploying contracts with the account:",
@@ -86,6 +86,9 @@ async function main() {
 	let implementationContest           = await ContestF.connect(depl_auxiliary).deploy();
 	let implementationContestETHOnly    = await ContestETHOnlyF.connect(depl_auxiliary).deploy();
 	
+    await implementationContest.waitForDeployment();
+    await implementationContestETHOnly.waitForDeployment();
+
 	console.log("Implementations:");
 	console.log("  Contest deployed at:        ", implementationContest.target);
 	console.log("  ContestETHOnly deployed at: ", implementationContestETHOnly.target);
@@ -109,10 +112,10 @@ async function main() {
 	//console.log(data_to_write);
     await write_data(data_to_write);
 
-    
     if (networkName == 'hardhat') {
         console.log("skipping verifying for  'hardhat' network");
     } else {
+
         console.log("Starting verifying:");
         await hre.run("verify:verify", {address: implementationContest.target});
         await hre.run("verify:verify", {address: implementationContestETHOnly.target});
