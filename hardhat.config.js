@@ -9,6 +9,9 @@ const mainnetURL = `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_M
 const maticURL = `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_MATIC}`
 const mumbaiURL = 'https://matic-mumbai.chainstacklabs.com';
 
+const baseURL = 'https://mainnet.base.org';
+const optimismURL = 'https://optimism.llamarpc.com';
+
 module.exports = {
   networks: {
     hardhat: {
@@ -65,7 +68,19 @@ module.exports = {
     mainnet: {
       url: mainnetURL,
       chainId: 1,
-      gasPrice: 20000000000,
+      //gasPrice: 20000000000,
+      accounts: [process.env.private_key],
+      saveDeployments: true
+    },
+    base: {
+      url: baseURL,
+      chainId: 8453,
+      accounts: [process.env.private_key],
+      saveDeployments: true
+    },
+    optimisticEthereum: {
+      url: optimismURL,
+      chainId: 10,
       accounts: [process.env.private_key],
       saveDeployments: true
     }
@@ -81,9 +96,13 @@ module.exports = {
     currency: "USD"
   },
   etherscan: {
-    apiKey: process.env.MATIC_API_KEY
-    //apiKey: process.env.ETHERSCAN_API_KEY
-    //apiKey: process.env.BSCSCAN_API_KEY
+    apiKey: {
+      polygon: process.env.MATIC_API_KEY,
+      bsc: process.env.BSCSCAN_API_KEY,
+      mainnet: process.env.ETHERSCAN_API_KEY,
+      optimisticEthereum: process.env.OPTIMISM_API_KEY,
+      base: process.env.BASE_API_KEY
+    }
   },
   solidity: {
     compilers: [
