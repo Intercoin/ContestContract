@@ -1,6 +1,6 @@
 {
-  "name": "contestcontract",
-  "version": "1.0.1",
+  "name": "@intercoin/contest",
+  "version": "1.0.2",
   "description": "Helps people contribute money to a project, and choose judges to distribute it for various solutions.",
   "main": "index.js",
   "directories": {

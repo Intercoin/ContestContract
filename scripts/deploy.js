@@ -42,12 +42,31 @@ async function main() {
 		throw("Arguments file: wrong addresses");
 	}
 
-	const [deployer] = await ethers.getSigners();
+	var depl_local,
+    depl_auxiliary,
+    depl_releasemanager,
+    depl_contest;
+
+	const networkName = hre.network.name;
+    var signers = await ethers.getSigners();
+    if (networkName == 'hardhat') {
+        depl_local = signers[0];
+        depl_auxiliary = signers[0];
+        depl_releasemanager = signers[0];
+        depl_contest = signers[0];
+    } else {
+        [
+            depl_local,
+            depl_auxiliary,
+            depl_releasemanager,
+            depl_contest
+        ] = signers;
+    }
 	
 	const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 	console.log(
 		"Deploying contracts with the account:",
-		deployer.address
+		depl_contest.address
 	);
 
 	var options = {
@@ -67,21 +86,52 @@ async function main() {
 		options
 	]
 
-	const deployerBalanceBefore = await ethers.provider.getBalance(deployer.address);
+	const deployerBalanceBefore = await ethers.provider.getBalance(depl_contest.address);
 	console.log("Account balance:", (deployerBalanceBefore).toString());
 
 	const ContestFactoryF = await ethers.getContractFactory("ContestFactory");
 
-	this.factory = await ContestFactoryF.connect(deployer).deploy(...params);
+	this.factory = await ContestFactoryF.connect(depl_contest).deploy(...params);
 
 	console.log("Factory deployed at:", this.factory.target);
 	console.log("with params:", [..._params]);
 
 	console.log("registered with release manager:", data_object.releaseManager);
 
-	const deployerBalanceAfter = await ethers.provider.getBalance(deployer.address);
+	const deployerBalanceAfter = await ethers.provider.getBalance(depl_contest.address);
 	console.log("Spent:", ethers.formatEther(deployerBalanceBefore - deployerBalanceAfter));
 	console.log("gasPrice:", ethers.formatUnits((await network.provider.send("eth_gasPrice")), "gwei")," gwei");
+
+	//const ReleaseManagerF = await ethers.getContractFactory("ReleaseManager");
+    const releaseManager = await ethers.getContractAt("ReleaseManager",data_object.releaseManager);
+    let txNewRelease = await releaseManager.connect(depl_releasemanager).newRelease(
+        [this.factory.target], 
+        [
+            [
+                7,//uint8 factoryIndex; 
+                7,//uint16 releaseTag; 
+                "0x000000000000000000000000000000000000000000000000"//bytes24 factoryChangeNotes;
+            ]
+        ]
+    );
+
+	console.log('newRelease - waiting');
+    await txNewRelease.wait(3);
+    console.log('newRelease - mined');
+	console.log('this.factory = ', this.factory.target);
+
+	
+    if (networkName == 'hardhat') {
+        console.log("skipping verifying for  'hardhat' network");
+    } else {
+        console.log("Starting verifying:");
+
+        await hre.run("verify:verify", {
+			address: this.factory.target,
+			constructorArguments: _params
+		});
+    }
+
 }
 
 main()

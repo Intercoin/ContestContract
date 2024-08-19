@@ -1,13 +1,9 @@
 require('dotenv').config();
 require("@nomicfoundation/hardhat-toolbox");
 
-const kovanURL = `https://eth-kovan.alchemyapi.io/v2/${process.env.ALCHEMY_KOVAN}`
-const goerliURL = `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_GOERLI}`
-const rinkebyURL = `https://rinkeby.infura.io/v3/${process.env.INFURA_ID_PROJECT}` //`https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_RINKEBY}`
 const bscURL = 'https://bsc-dataseed.binance.org' //`https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_RINKEBY}`
 const mainnetURL = `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_MAINNET}`
 const maticURL = `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_MATIC}`
-const mumbaiURL = 'https://matic-mumbai.chainstacklabs.com';
 
 const baseURL = 'https://mainnet.base.org';
 const optimismURL = 'https://optimism.llamarpc.com';
@@ -16,72 +12,69 @@ module.exports = {
   networks: {
     hardhat: {
       allowUnlimitedContractSize: false,
-      gasPrice: "auto",
+      //gasPrice: "auto",
       gasLimit: 22000000,
       chainId: 137,
       forking: {
         url: maticURL
       }
     },
-    kovan: {
-      url: kovanURL,
-      chainId: 42,
-      gas: 12000000,
-      accounts: [process.env.private_key],
-      saveDeployments: true
-    },
-    goerli: {
-      url: goerliURL,
-      chainId: 5,
-      gasPrice: 1000,
-      accounts: [process.env.private_key],
-      saveDeployments: true
-    },
-    rinkeby: {
-      url: rinkebyURL,
-      chainId: 4,
-      gasPrice: "auto",
-      accounts: [process.env.private_key],
-      saveDeployments: true
-    },
     bsc: {
       url: bscURL,
       chainId: 56,
-      gasPrice: "auto",
-      accounts: [process.env.private_key],
+      //gasPrice: "auto",
+      accounts: [
+        process.env.private_key,
+        process.env.private_key_auxiliary,
+        process.env.private_key_releasemanager,
+        process.env.private_key_contest
+      ],
       saveDeployments: true
     },
-    matic: {
+    polygon: {
       url: maticURL,
       chainId: 137,
       //gasPrice: "auto",
-      accounts: [process.env.private_key],
-      saveDeployments: true
-    },
-    mumbai: {
-      url: mumbaiURL,
-      chainId: 80001,
-      gasPrice: "auto",
-      accounts: [process.env.private_key],
+      accounts: [
+        process.env.private_key,
+        process.env.private_key_auxiliary,
+        process.env.private_key_releasemanager,
+        process.env.private_key_contest
+      ],
       saveDeployments: true
     },
     mainnet: {
       url: mainnetURL,
       chainId: 1,
       //gasPrice: 20000000000,
-      accounts: [process.env.private_key],
+      accounts: [
+        process.env.private_key,
+        process.env.private_key_auxiliary,
+        process.env.private_key_releasemanager,
+        process.env.private_key_contest
+      ],
       saveDeployments: true
     },
     base: {
       url: baseURL,
       chainId: 8453,
-      accounts: [process.env.private_key],
+      accounts: [
+        process.env.private_key,
+        process.env.private_key_auxiliary,
+        process.env.private_key_releasemanager,
+        process.env.private_key_contest
+      ],
       saveDeployments: true
     },
     optimisticEthereum: {
       url: optimismURL,
       chainId: 10,
-      accounts: [process.env.private_key],
+      accounts: [
+        process.env.private_key,
+        process.env.private_key_auxiliary,
+        process.env.private_key_releasemanager,
+        process.env.private_key_contest
+      ],
       saveDeployments: true
     }
   },
